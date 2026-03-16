@@ -155,15 +155,11 @@ Total Withdrawals
 
 </div>
 
-</div>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+<script>
 
   // Your web app's Firebase configuration
   const firebaseConfig = {
@@ -175,13 +171,41 @@ Total Withdrawals
     appId: "1:1012060146355:web:df28e525ed01ddb3cdfec6"
   };
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.firestore();
+
+async function loadCloudData(){
+
+let usersDoc = await db.collection("siteData").doc("users").get();
+let withdrawDoc = await db.collection("siteData").doc("withdrawals").get();
+
+if(usersDoc.exists){
+
+localStorage.setItem("users",JSON.stringify(usersDoc.data().users));
+
+}
+
+if(withdrawDoc.exists){
+
+localStorage.setItem("withdrawals",JSON.stringify(withdrawDoc.data().withdrawals));
+
+}
+
+}
+
+loadCloudData();
+
 </script>
 
 
 
+
+
+
   
+
+</div>
 
 <script>
 
