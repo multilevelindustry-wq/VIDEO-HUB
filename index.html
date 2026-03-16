@@ -780,7 +780,8 @@ location.reload();
   
 
 function login(){
-
+users = JSON.parse(localStorage.getItem("users") || "{}");
+  
 let username=document.getElementById("usernameLogin").value;
 let password=document.getElementById("passwordLogin").value;
 
@@ -1144,10 +1145,19 @@ document.addEventListener("scroll", resetTimer);
 
 window.onload = async function(){
 
+// Load cloud data
 await loadCloudBackup();
 
-users = JSON.parse(localStorage.getItem("users") || "{}");
+// Load local users
+let localUsers = JSON.parse(localStorage.getItem("users") || "{}");
 
+// Merge cloud + local users
+users = {...users, ...localUsers};
+
+// Save merged users
+localStorage.setItem("users", JSON.stringify(users));
+
+// Load withdrawals
 withdrawals = JSON.parse(localStorage.getItem("withdrawals") || "[]");
 
 getReferralFromURL();
