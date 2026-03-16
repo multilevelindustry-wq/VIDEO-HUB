@@ -813,12 +813,14 @@ completedTasks=users[currentUser].dailyTasks||{};
 
 document.getElementById("loginPage").style.display="none";
 document.getElementById("dashboard").classList.remove("hidden");
+let refId = users[currentUser].userId;
 
 document.getElementById("userNameDisplay").innerText=username;
 document.getElementById("userIdDisplay").innerText=users[username].userId;
 
-document.getElementById("refLink").value=
-location.href+"?ref="+users[username].userId;
+
+ let cleanURL = window.location.origin + window.location.pathname;
+document.getElementById("refLink").value = cleanURL + "?ref=" + refId;
 
 renderTasks();
 renderProducts();   // ✅ ADD THIS LINE
