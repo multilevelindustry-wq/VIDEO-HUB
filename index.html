@@ -668,8 +668,6 @@ localStorage.setItem("withdrawals",JSON.stringify(withdrawals));
   
 let withdrawals=JSON.parse(localStorage.getItem("withdrawals")||"[]");
 
-let currentUser=null;
-
 let completedTasks={};
 
 let videoTasks=[];
@@ -1148,6 +1146,10 @@ window.onload = async function(){
 
 await loadCloudBackup();
 
+users = JSON.parse(localStorage.getItem("users") || "{}");
+
+withdrawals = JSON.parse(localStorage.getItem("withdrawals") || "[]");
+
 getReferralFromURL();
 
 startInactivityTimer();
@@ -1306,7 +1308,7 @@ document.getElementById("cartCount").innerText=count;
 
 function creditProducts(){
 
-let users = JSON.parse(localStorage.getItem("users"));
+users = JSON.parse(localStorage.getItem("users"));
 let current = localStorage.getItem("currentUser");
 
 let totalCommission = 0;
