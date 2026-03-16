@@ -624,6 +624,8 @@ const db = firebase.firestore();
 <script>
 
 let users=JSON.parse(localStorage.getItem("users")||"{}");
+let currentUser = localStorage.getItem("currentUser");
+  
   // CLOUD SYNC FUNCTIONS
 
 function syncUsersToCloud(){
@@ -769,13 +771,16 @@ users[username].referrer=u;
 
 }
 
-  syncUsersToCloud();
-  
+  localStorage.setItem("users", JSON.stringify(users));
+
+syncUsersToCloud();
+
 alert("Account created. Login now");
 
 location.reload();
-
+  
 }
+  
 
 function login(){
 
@@ -787,7 +792,8 @@ if(!users[username]){alert("User not found");return;}
 if(users[username].password!==password){alert("Wrong password");return;}
 
 currentUser=username;
-
+localStorage.setItem("currentUser", username);
+  
 completedTasks=users[currentUser].dailyTasks||{};
 
 document.getElementById("loginPage").style.display="none";
@@ -1076,11 +1082,6 @@ refInput.value=ref;
 
 }
 
-
-window.onload=function(){
-getReferralFromURL();
-};
-
 }
 
 
@@ -1144,10 +1145,11 @@ document.addEventListener("click", resetTimer);
 document.addEventListener("keypress", resetTimer);
 document.addEventListener("scroll", resetTimer);
 
-// start timer when page loads
 window.onload = async function(){
 
 await loadCloudBackup();
+
+getReferralFromURL();
 
 startInactivityTimer();
 
@@ -1322,7 +1324,7 @@ payReferralCommission(currentUser, totalCommission);
 
 }
 
-users[current].balance += totalCommission;
+users[currentUser].balance += totalCommission;
 
 localStorage.setItem("users", JSON.stringify(users));
 
