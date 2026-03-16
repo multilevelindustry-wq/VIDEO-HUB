@@ -628,6 +628,47 @@ font-size:14px;
 <script>
 
 let users=JSON.parse(localStorage.getItem("users")||"{}");
+  // CLOUD SYNC FUNCTIONS
+
+function syncUsersToCloud(){
+
+db.collection("siteData").doc("users").set({
+users: users
+});
+
+}
+
+function syncWithdrawalsToCloud(){
+
+db.collection("siteData").doc("withdrawals").set({
+withdrawals: withdrawals
+});
+
+}
+
+async function loadCloudBackup(){
+
+let usersDoc = await db.collection("siteData").doc("users").get();
+let withdrawDoc = await db.collection("siteData").doc("withdrawals").get();
+
+if(usersDoc.exists){
+
+users = usersDoc.data().users || {};
+
+localStorage.setItem("users",JSON.stringify(users));
+
+}
+
+if(withdrawDoc.exists){
+
+withdrawals = withdrawDoc.data().withdrawals || [];
+
+localStorage.setItem("withdrawals",JSON.stringify(withdrawals));
+
+}
+
+  }
+  
 let withdrawals=JSON.parse(localStorage.getItem("withdrawals")||"[]");
 
 let currentUser=null;
@@ -732,8 +773,8 @@ users[username].referrer=u;
 
 }
 
-localStorage.setItem("users",JSON.stringify(users));
-
+  syncUsersToCloud();
+  
 alert("Account created. Login now");
 
 location.reload();
@@ -883,7 +924,7 @@ updateProgress();
 renderTasks();
 
 alert("Reward credited: $" + reward);
-
+syncUsersToCloud();
 }
 
 function updateBalance(){
@@ -1004,6 +1045,7 @@ function withdraw(){
   });
 
   localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
+  syncWithdrawalsToCloud();
   localStorage.setItem("users", JSON.stringify(users));
 
   updateBalance();
@@ -1107,8 +1149,13 @@ document.addEventListener("keypress", resetTimer);
 document.addEventListener("scroll", resetTimer);
 
 // start timer when page loads
-window.onload = startInactivityTimer;
+window.onload = async function(){
 
+await loadCloudBackup();
+
+startInactivityTimer();
+
+};
 
 
 let cart={};
@@ -1496,6 +1543,7 @@ function payReferralCommission(username, amount){
   }
 
   localStorage.setItem("users", JSON.stringify(users));
+  syncUsersToCloud();
 
 }
 
