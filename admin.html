@@ -375,24 +375,25 @@ ${w.status==="Pending"?
 
 function approve(i){
 
-let withdrawals=JSON.parse(localStorage.getItem("withdrawals"));
+let withdrawals=JSON.parse(localStorage.getItem("withdrawals") || "[]");
 
 withdrawals[i].status="Approved";
 
 localStorage.setItem("withdrawals",JSON.stringify(withdrawals));
 
+syncWithdrawalsToCloud();   // SAVE TO FIREBASE
+
 loadWithdrawals();
 loadUsers();
 
-}
-
-
+   }
+  
 
 function reject(i){
 
-let withdrawals=JSON.parse(localStorage.getItem("withdrawals"));
+let withdrawals=JSON.parse(localStorage.getItem("withdrawals") || "[]");
 
-let users=JSON.parse(localStorage.getItem("users")||"{}");
+let users=JSON.parse(localStorage.getItem("users") || "{}");
 
 let w=withdrawals[i];
 
@@ -402,12 +403,15 @@ w.status="Rejected";
 
 if(users[w.user]){
 
-users[w.user].balance+=parseFloat(w.amount);
+users[w.user].balance += parseFloat(w.amount);
 
 }
 
 localStorage.setItem("users",JSON.stringify(users));
 localStorage.setItem("withdrawals",JSON.stringify(withdrawals));
+
+syncUsersToCloud();         // SAVE USERS
+syncWithdrawalsToCloud();   // SAVE WITHDRAWALS
 
 loadWithdrawals();
 loadUsers();
@@ -415,6 +419,9 @@ loadUsers();
 alert("Withdrawal Rejected and Balance Returned");
 
 }
+
+
+  
 
 function openAdmin(){
 
@@ -469,6 +476,28 @@ table.innerHTML+=`
 
 }
 
+
+  async function syncWithdrawalsToCloud(){
+
+let withdrawals = JSON.parse(localStorage.getItem("withdrawals") || "[]");
+
+await db.collection("siteData").doc("withdrawals").set({
+withdrawals: withdrawals
+});
+
+  }
+
+
+  async function syncUsersToCloud(){
+
+let users = JSON.parse(localStorage.getItem("users") || "{}");
+
+await db.collection("siteData").doc("users").set({
+users: users
+});
+
+                                    }
+  
 </script>
 
 </body>
