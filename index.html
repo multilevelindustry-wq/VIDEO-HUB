@@ -734,7 +734,23 @@ let password=document.getElementById("regPassword").value;
 let phone=document.getElementById("regPhone").value;
 let ref=document.getElementById("regRef").value;
 
-if(users[username]){alert("Username exists");return;}
+  if(!username || !email || !password || !phone){
+alert("Please fill all fields");
+return;
+  }
+  
+if(users[username]){
+alert("Username already exists");
+return;
+}
+
+// check duplicate email
+for(let u in users){
+if(users[u].email === email){
+alert("Email already registered");
+return;
+}
+  }
 
 let userId="U"+Math.floor(Math.random()*1000000);
 
@@ -772,9 +788,10 @@ users[username].referrer=u;
 
 syncUsersToCloud();
 
-alert("Account created. Login now");
+alert("Account created successfully. Please login.");
 
-location.reload();
+document.getElementById("registerPage").classList.add("hidden");
+document.getElementById("loginPage").style.display="block";
   
 }
   
