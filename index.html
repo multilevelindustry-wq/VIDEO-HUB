@@ -607,6 +607,18 @@ font-size:14px;
 
 <script>
 
+  let urlParams = new URLSearchParams(window.location.search);
+let referralId = urlParams.get("ref"); // gets ?ref=XXXX
+
+  function findUserById(userId){
+for(let u in users){
+if(users[u].userId === userId){
+return u; // return username
+}
+}
+return null;
+  }
+
 const firebaseConfig = {
   apiKey: "AIzaSyAIMJG3dsKDeVrfECuXByZji_yZGkeJP5Q",
   authDomain: "video-hub-website.firebaseapp.com",
@@ -780,27 +792,19 @@ document.getElementById("registerPage").classList.remove("hidden");
 }
 
 
+function register(){
 
-  async function register(){
-
-users = JSON.parse(localStorage.getItem("users") || "{}");
-
-let username=document.getElementById("regUsername").value;
-let email=document.getElementById("regEmail").value;
-let password=document.getElementById("regPassword").value;
-let phone=document.getElementById("regPhone").value;
-
-if(!username || !email || !password || !phone){
-alert("Fill all fields");
-return;
-}
+let username = document.getElementById("regUsername").value;
+let email = document.getElementById("regEmail").value;
+let phone = document.getElementById("regPhone").value;
+let password = document.getElementById("regPassword").value;
 
 if(users[username]){
-alert("Username exists");
+alert("Username already exists");
 return;
 }
 
-    // check duplicate email
+     // check duplicate email
 for(let u in users){
 if(users[u].email === email){
 alert("Email already registered");
@@ -808,32 +812,43 @@ return;
 }
   }
 
-let userId="U"+Math.floor(Math.random()*1000000);
-
-let ref = document.getElementById("regRef").value;
+// ✅ generate unique userId
+let userId = "UID" + Math.floor(Math.random()*1000000);
 
 users[username] = {
-email, phone, password,
-balance:0,
-personalBalance:0,
-referralBalance:0,
-userId,
-dailyTasks:{},
-referrer: ref || null,
-refEarnings:0
+username: username,
+email: email,
+phone: phone,
+password: password,
+userId: userId,
+
+balance: 0,
+personalBalance: 0,
+referralBalance: 0,
+refEarnings: 0,
+
+// ✅ IMPORTANT FIX HERE
+referrer: referralId || null,
+
+dailyTasks: {}
 };
 
 localStorage.setItem("users", JSON.stringify(users));
-
 syncUsersToCloud();
-await loadCloudBackup(); // ✅ VERY IMPORTANT
 
-alert("Account created successfully");
+alert("Registration successful");
 
 document.getElementById("registerPage").classList.add("hidden");
 document.getElementById("loginPage").style.display="block";
-
+  
   }
+
+
+
+  
+
+
+  
 
 
 
@@ -878,10 +893,33 @@ renderTasks();
 renderProducts();
 updateBalance();
 updateProgress();
+loadReferrals();
 
   }
 
 
+
+function loadReferrals(){
+
+let container = document.getElementById("refList");
+container.innerHTML = "";
+
+let myId = users[currentUser].userId;
+
+for(let u in users){
+
+if(users[u].referrer === myId){
+
+container.innerHTML += `<p>${u}</p>`;
+
+}
+
+}
+
+  }
+  
+
+  
 
   async function completeTask(taskId, reward){
 
@@ -1697,57 +1735,57 @@ alert("Email not found");
 
   }
 
-  
+
 
 function payReferralCommission(username, amount){
 
-  let level1 = users[username].referrer;
+let refId = users[username].referrer;
 
-  if(level1 && users[level1]){
+let level1User = findUserById(refId);
 
-    users[level1].balance = users[level1].balance || 0;
-    users[level1].referralBalance = users[level1].referralBalance || 0;
-    users[level1].refEarnings = users[level1].refEarnings || 0;
+if(level1User){
 
-    let commission1 = amount * 0.10;
+let commission1 = amount * 0.10;
 
-    users[level1].balance += commission1;
-    users[level1].referralBalance += commission1;
-    users[level1].refEarnings += commission1;
+users[level1User].balance += commission1;
+users[level1User].referralBalance += commission1;
+users[level1User].refEarnings += commission1;
 
-    let level2 = users[level1].referrer;
+// LEVEL 2
+let level2Id = users[level1User].referrer;
+let level2User = findUserById(level2Id);
 
-    if(level2 && users[level2]){
-      users[level2].balance = users[level2].balance || 0;
-      users[level2].referralBalance = users[level2].referralBalance || 0;
-      users[level2].refEarnings = users[level2].refEarnings || 0;
+if(level2User){
 
-      let commission2 = amount * 0.05;
+let commission2 = amount * 0.05;
 
-      users[level2].balance += commission2;
-      users[level2].referralBalance += commission2;
-      users[level2].refEarnings += commission2;
+users[level2User].balance += commission2;
+users[level2User].referralBalance += commission2;
+users[level2User].refEarnings += commission2;
 
-      let level3 = users[level2].referrer;
+// LEVEL 3
+let level3Id = users[level2User].referrer;
+let level3User = findUserById(level3Id);
 
-      if(level3 && users[level3]){
-        users[level3].balance = users[level3].balance || 0;
-        users[level3].referralBalance = users[level3].referralBalance || 0;
-        users[level3].refEarnings = users[level3].refEarnings || 0;
+if(level3User){
 
-        let commission3 = amount * 0.02;
+let commission3 = amount * 0.02;
 
-        users[level3].balance += commission3;
-        users[level3].referralBalance += commission3;
-        users[level3].refEarnings += commission3;
-      }
-    }
+users[level3User].balance += commission3;
+users[level3User].referralBalance += commission3;
+users[level3User].refEarnings += commission3;
+
+}
+
+}
+
+}
+
+localStorage.setItem("users", JSON.stringify(users));
+syncUsersToCloud();
   }
 
-  localStorage.setItem("users", JSON.stringify(users));
-  syncUsersToCloud();
 
-  }
 
 </script>
 
