@@ -643,6 +643,7 @@ let currentUser = localStorage.getItem("currentUser");
   // CLOUD SYNC FUNCTIONS
 
 function syncUsersToCloud(){
+ 
 
 db.collection("siteData").doc("users").set({
 users: users
@@ -655,7 +656,7 @@ function syncWithdrawalsToCloud(){
 db.collection("siteData").doc("withdrawals").set({
 withdrawals: withdrawals
 });
-
+users = JSON.parse(localStorage.getItem("users") || "{}");
 }
 
 
@@ -828,13 +829,17 @@ referralBalance: 0,
 refEarnings: 0,
 
 // ✅ IMPORTANT FIX HERE
-referrer: referralId || null,
+let refInput = document.getElementById("regRef").value;
 
+users[username] = {
+...
+referrer: refInput || referralId || null,
 dailyTasks: {}
 };
 
 localStorage.setItem("users", JSON.stringify(users));
 syncUsersToCloud();
+  users = JSON.parse(localStorage.getItem("users") || "{}");
 
 alert("Registration successful");
 
@@ -856,8 +861,7 @@ document.getElementById("loginPage").style.display="block";
   async function login(){
 
 await loadCloudBackup(); // ✅ VERY IMPORTANT
-
-users = JSON.parse(localStorage.getItem("users") || "{}");
+    users = JSON.parse(localStorage.getItem("users") || "{}");
 
 let username = document.getElementById("usernameLogin").value;
 let password = document.getElementById("passwordLogin").value;
@@ -919,7 +923,7 @@ container.innerHTML += `<p>${u}</p>`;
 
   
 
-  async function completeTask(taskId, reward){
+async function completeTask(taskId, reward){
 
 let tasks = users[currentUser].dailyTasks || {};
 
@@ -933,13 +937,12 @@ return;
 tasks[taskId] = true;
 users[currentUser].dailyTasks = tasks;
 
-// ✅ ADD MONEY
+// add money
 users[currentUser].balance += reward;
 users[currentUser].personalBalance += reward;
 
-  }
-
-                     
+// referral
+payReferralCommission(currentUser, reward);
 
 // save
 localStorage.setItem("users", JSON.stringify(users));
@@ -1031,9 +1034,10 @@ container.innerHTML += `
         user.balance = (user.balance || 0) + earnedAmount;
 
         // referral bonus
-        if(user.referrer && users[user.referrer]){
-            payReferralCommission(currentUser, earnedAmount);
-        }
+if(user.referrer){
+payReferralCommission(currentUser, earnedAmount);
+ }
+      
 
         localStorage.setItem("users", JSON.stringify(users));
         db.collection("siteData").doc("users").set({ users });
@@ -1160,35 +1164,35 @@ loadRefs();
 }
 
 
-function loadRefs(){
-   
-if(users[u].referrer === users[currentUser].userId)
 
-let tbody=document.getElementById("refTable");
-tbody.innerHTML="";
+  function loadRefs(){
+
+let tbody = document.getElementById("refTable");
+tbody.innerHTML = "";
+
+let myId = users[currentUser].userId;
+
 for(let u in users){
 
-if(users[u].referrer===currentUser){
+if(users[u].referrer === myId){
 
-tbody.innerHTML+=`
-
+tbody.innerHTML += `
 <tr>
-
 <td>${u}</td>
 <td>${users[u].userId}</td>
 <td>${users[u].phone}</td>
-<td>$${users[u].balance.toFixed(2)}</td>
-
+<td>$${(users[u].balance || 0).toFixed(2)}</td>
 </tr>
-
 `;
 
 }
 
 }
 
-}
+  }
 
+
+  
 
 function withdraw(){
   let amount = parseFloat(document.getElementById("withdrawAmount").value);
@@ -1203,6 +1207,7 @@ function withdraw(){
 
   if(amount > user.balance){
     alert("Insufficient balance");
+    
     return;
   }
 
@@ -1329,6 +1334,7 @@ document.addEventListener("scroll", resetTimer);
 
   
 window.onload = async function(){
+  getReferralFromURL();
 
 await loadCloudBackup();
 
@@ -1412,6 +1418,7 @@ container.innerHTML+=`
 
 }
 
+
 function addToCart(id){
 
 let product=products.find(p=>p.id===id);
@@ -1459,6 +1466,1118 @@ container.innerHTML+=`
 
 <span style="margin:0 10px">${p.qty}</span>
 
+<button onclick="increaseQty(${id})">+</button>
+
+</div>
+
+`;
+
+}
+
+document.getElementById("cartTotal").innerText="Total: $"+total;
+
+}
+
+
+function increaseQty(id){
+
+cart[id].qty++;
+
+updateCartCount();
+
+openCart();
+
+}
+
+function decreaseQty(id){
+
+cart[id].qty--;
+
+if(cart[id].qty<=0){
+delete cart[id];
+}
+
+updateCartCount();
+
+openCart();
+
+}
+
+
+
+function openCheckout(){
+
+document.getElementById("cartPage").style.display="none";
+document.getElementById("checkoutPage").style.display="block";
+
+let total=0;
+
+for(let id in cart){
+total+=cart[id].price*cart[id].qty;
+}
+
+document.getElementById("checkoutAmount").innerText="Amount: $"+total;
+
+}
+
+
+
+function updateCartCount(){
+
+let count=0;
+
+for(let id in cart){
+count+=cart[id].qty;
+}
+
+document.getElementById("cartCount").innerText=count;
+
+}
+
+
+
+
+
+function creditProducts(){
+
+users = JSON.parse(localStorage.getItem("users"));
+let current = localStorage.getItem("currentUser");
+
+let totalCommission = 0;
+
+for(let id in cart){
+
+let product = cart[id];
+
+let commission = product.price * product.commission * product.qty;
+
+totalCommission += commission;
+
+payReferralCommission(currentUser, totalCommission);
+
+}
+
+users[currentUser].balance += totalCommission;
+
+localStorage.setItem("users", JSON.stringify(users));
+
+alert("Commission credited: $" + totalCommission.toFixed(2));
+
+cart = {};
+
+updateCartCount();
+updateBalance();
+
+goHome();
+
+}
+
+
+
+function goHome(){
+
+document.getElementById("taskHome").style.display="block";
+document.getElementById("cartPage").style.display="none";
+document.getElementById("checkoutPage").style.display="none";
+
+}
+
+
+
+function payWithPaypal(){
+
+let total=0;
+
+for(let id in cart){
+total+=cart[id].price*cart[id].qty;
+}
+
+paypal.Buttons({
+
+createOrder:function(data,actions){
+
+return actions.order.create({
+
+purchase_units:[{
+
+amount:{value:total}
+
+}]
+
+});
+
+},
+
+onApprove:function(data,actions){
+
+return actions.order.capture().then(function(details){
+
+creditProducts();
+
+alert("Payment successful");
+
+});
+
+}
+
+}).render('#checkoutPage');
+
+}
+
+
+function payWithPaystack(){
+
+let total=0;
+
+for(let id in cart){
+total+=cart[id].price*cart[id].qty;
+}
+
+let handler=PaystackPop.setup({
+
+key:'pk_live_ae2ef39d24e2f001cbc716def10d3ede5148af5b',
+
+email:users[currentUser].email,
+
+amount:total*1500*100,
+
+currency:'NGN',
+
+callback:function(response){
+
+creditProducts();
+
+alert("Payment successful");
+
+},
+
+onClose:function(){
+
+alert("Payment cancelled");
+
+}
+
+});
+
+handler.openIframe();
+
+}
+
+
+
+
+
+
+
+
+function showWithdrawStatus(){
+
+let withdrawals=JSON.parse(localStorage.getItem("withdrawals")||"[]");
+
+let table=document.getElementById("withdrawStatusTable");
+
+table.innerHTML="";
+
+withdrawals.forEach(w=>{
+
+if(w.user===currentUser){
+
+table.innerHTML+=`
+
+<tr>
+
+<td>$${w.amount}</td>
+<td>${w.status}</td>
+<td>${w.date||""}</td>
+
+</tr>
+
+`;
+
+}
+
+});
+
+document.getElementById("withdrawStatusBox").style.display="block";
+
+}
+
+
+
+
+  
+function openForgotPassword() {
+  document.getElementById("loginPage").style.display = "none";
+  document.getElementById("forgotPasswordPage").classList.remove("hidden");
+}
+
+function backToLogin() {
+  document.getElementById("forgotPasswordPage").classList.add("hidden");
+  document.getElementById("loginPage").style.display = "block";
+}
+
+
+  async function retrievePassword(){
+
+await loadCloudBackup();
+
+users = JSON.parse(localStorage.getItem("users") || "{}");
+
+let email = document.getElementById("forgotEmail").value.trim();
+
+for(let username in users){
+
+if(users[username].email === email){
+
+alert(`Your password for ${username}: ${users[username].password}`);
+return;
+
+}
+
+}
+
+alert("Email not found");
+
+  }
+
+
+
+function payReferralCommission(username, amount){
+
+let level1Id = users[username].referrer;
+let level1User = findUserById(level1Id);
+
+if(level1User && users[level1User]){
+
+let commission1 = amount * 0.10;
+
+users[level1User].balance += commission1;
+users[level1User].referralBalance = (users[level1User].referralBalance || 0) + commission1;
+users[level1User].refEarnings = (users[level1User].refEarnings || 0) + commission1;
+
+
+// LEVEL 2
+let level2Id = users[level1User].referrer;
+let level2User = findUserById(level2Id);
+
+if(level2User && users[level2User]){
+
+let commission2 = amount * 0.05;
+
+users[level2User].balance += commission2;
+users[level2User].referralBalance = (users[level2User].referralBalance || 0) + commission2;
+users[level2User].refEarnings = (users[level2User].refEarnings || 0) + commission2;
+
+
+// LEVEL 3
+let level3Id = users[level2User].referrer;
+let level3User = findUserById(level3Id);
+
+if(level3User && users[level3User]){
+
+let commission3 = amount * 0.02;
+
+users[level3User].balance += commission3;
+users[level3User].referralBalance = (users[level3User].referralBalance || 0) + commission3;
+users[level3User].refEarnings = (users[level3User].refEarnings || 0) + commission3;
+
+}
+
+}
+
+}
+
+localStorage.setItem("users", JSON.stringify(users));
+syncUsersToCloud();
+
+  }
+  
+function addToCart(id){
+
+let product=products.find(p=>p.id===id);
+
+if(cart[id]){
+cart[id].qty++;
+}else{
+cart[id]={...product,qty:1};
+}
+
+updateCartCount();
+
+alert("Added to cart");
+
+}
+
+
+function openCart(){
+
+document.getElementById("taskHome").style.display="none";
+document.getElementById("cartPage").style.display="block";
+document.getElementById("checkoutPage").style.display="none";
+
+let container=document.getElementById("cartItems");
+
+container.innerHTML="";
+
+let total=0;
+
+for(let id in cart){
+
+let p=cart[id];
+
+total+=p.price*p.qty;
+
+container.innerHTML+=`
+
+<div style="border-bottom:1px solid #ccc;padding:10px">
+
+<h4>${p.title}</h4>
+
+<p>$${p.price}</p>
+
+<button onclick="decreaseQty(${id})">-</button>
+
+<span style="margin:0 10px">${p.qty}</span>
+
+<button onclick="increaseQty(${id})">+</button>
+
+</div>
+
+`;
+
+}
+
+document.getElementById("cartTotal").innerText="Total: $"+total;
+
+}
+
+
+function increaseQty(id){
+
+cart[id].qty++;
+
+updateCartCount();
+
+openCart();
+
+}
+
+function decreaseQty(id){
+
+cart[id].qty--;
+
+if(cart[id].qty<=0){
+delete cart[id];
+}
+
+updateCartCount();
+
+openCart();
+
+}
+
+
+
+function openCheckout(){
+
+document.getElementById("cartPage").style.display="none";
+document.getElementById("checkoutPage").style.display="block";
+
+let total=0;
+
+for(let id in cart){
+total+=cart[id].price*cart[id].qty;
+}
+
+document.getElementById("checkoutAmount").innerText="Amount: $"+total;
+
+}
+
+
+
+function updateCartCount(){
+
+let count=0;
+
+for(let id in cart){
+count+=cart[id].qty;
+}
+
+document.getElementById("cartCount").innerText=count;
+
+}
+
+
+
+
+
+function creditProducts(){
+
+users = JSON.parse(localStorage.getItem("users"));
+let current = localStorage.getItem("currentUser");
+
+let totalCommission = 0;
+
+for(let id in cart){
+
+let product = cart[id];
+
+let commission = product.price * product.commission * product.qty;
+
+totalCommission += commission;
+
+payReferralCommission(currentUser, totalCommission);
+
+}
+
+users[currentUser].balance += totalCommission;
+
+localStorage.setItem("users", JSON.stringify(users));
+
+alert("Commission credited: $" + totalCommission.toFixed(2));
+
+cart = {};
+
+updateCartCount();
+updateBalance();
+
+goHome();
+
+}
+
+
+
+function goHome(){
+
+document.getElementById("taskHome").style.display="block";
+document.getElementById("cartPage").style.display="none";
+document.getElementById("checkoutPage").style.display="none";
+
+}
+
+
+
+function payWithPaypal(){
+
+let total=0;
+
+for(let id in cart){
+total+=cart[id].price*cart[id].qty;
+}
+
+paypal.Buttons({
+
+createOrder:function(data,actions){
+
+return actions.order.create({
+
+purchase_units:[{
+
+amount:{value:total}
+
+}]
+
+});
+
+},
+
+onApprove:function(data,actions){
+
+return actions.order.capture().then(function(details){
+
+creditProducts();
+
+alert("Payment successful");
+
+});
+
+}
+
+}).render('#checkoutPage');
+
+}
+
+
+function payWithPaystack(){
+
+let total=0;
+
+for(let id in cart){
+total+=cart[id].price*cart[id].qty;
+}
+
+let handler=PaystackPop.setup({
+
+key:'pk_live_ae2ef39d24e2f001cbc716def10d3ede5148af5b',
+
+email:users[currentUser].email,
+
+amount:total*1500*100,
+
+currency:'NGN',
+
+callback:function(response){
+
+creditProducts();
+
+alert("Payment successful");
+
+},
+
+onClose:function(){
+
+alert("Payment cancelled");
+
+}
+
+});
+
+handler.openIframe();
+
+}
+
+
+
+
+
+
+
+
+function showWithdrawStatus(){
+
+let withdrawals=JSON.parse(localStorage.getItem("withdrawals")||"[]");
+
+let table=document.getElementById("withdrawStatusTable");
+
+table.innerHTML="";
+
+withdrawals.forEach(w=>{
+
+if(w.user===currentUser){
+
+table.innerHTML+=`
+
+<tr>
+
+<td>$${w.amount}</td>
+<td>${w.status}</td>
+<td>${w.date||""}</td>
+
+</tr>
+
+`;
+
+}
+
+});
+
+document.getElementById("withdrawStatusBox").style.display="block";
+
+}
+
+
+
+
+  
+function openForgotPassword() {
+  document.getElementById("loginPage").style.display = "none";
+  document.getElementById("forgotPasswordPage").classList.remove("hidden");
+}
+
+function backToLogin() {
+  document.getElementById("forgotPasswordPage").classList.add("hidden");
+  document.getElementById("loginPage").style.display = "block";
+}
+
+async function retrievePassword(){
+
+await loadCloudBackup(); // ✅ IMPORTANT
+
+users = JSON.parse(localStorage.getItem("users") || "{}");
+
+let email = document.getElementById("forgotEmail").value.trim();
+
+for (let username in users) {
+if (users[username].email === email) {
+alert(`Your password for ${username}: ${users[username].password}`);
+return;
+}
+}
+
+alert("Email not found");
+
+  }
+
+
+
+function payReferralCommission(username, amount){
+
+let level1Id = users[username].referrer;
+let level1User = findUserById(level1Id);
+
+if(level1User && users[level1User]){
+
+let commission1 = amount * 0.10;
+
+users[level1User].balance += commission1;
+users[level1User].referralBalance = (users[level1User].referralBalance || 0) + commission1;
+users[level1User].refEarnings = (users[level1User].refEarnings || 0) + commission1;
+
+
+// LEVEL 2
+let level2Id = users[level1User].referrer;
+let level2User = findUserById(level2Id);
+
+if(level2User && users[level2User]){
+
+let commission2 = amount * 0.05;
+
+users[level2User].balance += commission2;
+users[level2User].referralBalance = (users[level2User].referralBalance || 0) + commission2;
+users[level2User].refEarnings = (users[level2User].refEarnings || 0) + commission2;
+
+
+// LEVEL 3
+let level3Id = users[level2User].referrer;
+let level3User = findUserById(level3Id);
+
+if(level3User && users[level3User]){
+
+let commission3 = amount * 0.02;
+
+users[level3User].balance += commission3;
+users[level3User].referralBalance = (users[level3User].referralBalance || 0) + commission3;
+users[level3User].refEarnings = (users[level3User].refEarnings || 0) + commission3;
+
+}
+
+}
+
+}
+
+localStorage.setItem("users", JSON.stringify(users));
+syncUsersToCloud();
+
+  }
+  
+
+
+function addToCart(id){
+
+let product=products.find(p=>p.id===id);
+
+if(cart[id]){
+cart[id].qty++;
+}else{
+cart[id]={...product,qty:1};
+}
+
+updateCartCount();
+
+alert("Added to cart");
+
+}
+
+
+function openCart(){
+
+document.getElementById("taskHome").style.display="none";
+document.getElementById("cartPage").style.display="block";
+document.getElementById("checkoutPage").style.display="none";
+
+let container=document.getElementById("cartItems");
+
+container.innerHTML="";
+
+let total=0;
+
+for(let id in cart){
+
+let p=cart[id];
+
+total+=p.price*p.qty;
+
+container.innerHTML+=`
+
+<div style="border-bottom:1px solid #ccc;padding:10px">
+
+<h4>${p.title}</h4>
+
+<p>$${p.price}</p>
+
+<button onclick="decreaseQty(${id})">-</button>
+
+<span style="margin:0 10px">${p.qty}</span>
+
+<button onclick="increaseQty(${id})">+</button>
+
+</div>
+
+`;
+
+}
+
+document.getElementById("cartTotal").innerText="Total: $"+total;
+
+}
+
+
+function increaseQty(id){
+
+cart[id].qty++;
+
+updateCartCount();
+
+openCart();
+
+}
+
+function decreaseQty(id){
+
+cart[id].qty--;
+
+if(cart[id].qty<=0){
+delete cart[id];
+}
+
+updateCartCount();
+
+openCart();
+
+}
+
+
+
+function openCheckout(){
+
+document.getElementById("cartPage").style.display="none";
+document.getElementById("checkoutPage").style.display="block";
+
+let total=0;
+
+for(let id in cart){
+total+=cart[id].price*cart[id].qty;
+}
+
+document.getElementById("checkoutAmount").innerText="Amount: $"+total;
+
+}
+
+
+
+function updateCartCount(){
+
+let count=0;
+
+for(let id in cart){
+count+=cart[id].qty;
+}
+
+document.getElementById("cartCount").innerText=count;
+
+}
+
+
+
+
+
+function creditProducts(){
+
+users = JSON.parse(localStorage.getItem("users"));
+let current = localStorage.getItem("currentUser");
+
+let totalCommission = 0;
+
+for(let id in cart){
+
+let product = cart[id];
+
+let commission = product.price * product.commission * product.qty;
+
+totalCommission += commission;
+
+payReferralCommission(currentUser, totalCommission);
+
+}
+
+users[currentUser].balance += totalCommission;
+
+localStorage.setItem("users", JSON.stringify(users));
+
+alert("Commission credited: $" + totalCommission.toFixed(2));
+
+cart = {};
+
+updateCartCount();
+updateBalance();
+
+goHome();
+
+}
+
+
+
+function goHome(){
+
+document.getElementById("taskHome").style.display="block";
+document.getElementById("cartPage").style.display="none";
+document.getElementById("checkoutPage").style.display="none";
+
+}
+
+
+
+function payWithPaypal(){
+
+let total=0;
+
+for(let id in cart){
+total+=cart[id].price*cart[id].qty;
+}
+
+paypal.Buttons({
+
+createOrder:function(data,actions){
+
+return actions.order.create({
+
+purchase_units:[{
+
+amount:{value:total}
+
+}]
+
+});
+
+},
+
+onApprove:function(data,actions){
+
+return actions.order.capture().then(function(details){
+
+creditProducts();
+
+alert("Payment successful");
+
+});
+
+}
+
+}).render('#checkoutPage');
+
+}
+
+
+function payWithPaystack(){
+
+let total=0;
+
+for(let id in cart){
+total+=cart[id].price*cart[id].qty;
+}
+
+let handler=PaystackPop.setup({
+
+key:'pk_live_ae2ef39d24e2f001cbc716def10d3ede5148af5b',
+
+email:users[currentUser].email,
+
+amount:total*1500*100,
+
+currency:'NGN',
+
+callback:function(response){
+
+creditProducts();
+
+alert("Payment successful");
+
+},
+
+onClose:function(){
+
+alert("Payment cancelled");
+
+}
+
+});
+
+handler.openIframe();
+
+}
+
+
+
+
+
+
+
+
+function showWithdrawStatus(){
+
+let withdrawals=JSON.parse(localStorage.getItem("withdrawals")||"[]");
+
+let table=document.getElementById("withdrawStatusTable");
+
+table.innerHTML="";
+
+withdrawals.forEach(w=>{
+
+if(w.user===currentUser){
+
+table.innerHTML+=`
+
+<tr>
+
+<td>$${w.amount}</td>
+<td>${w.status}</td>
+<td>${w.date||""}</td>
+
+</tr>
+
+`;
+
+}
+
+});
+
+document.getElementById("withdrawStatusBox").style.display="block";
+
+}
+
+
+
+
+  
+function openForgotPassword() {
+  document.getElementById("loginPage").style.display = "none";
+  document.getElementById("forgotPasswordPage").classList.remove("hidden");
+}
+
+function backToLogin() {
+  document.getElementById("forgotPasswordPage").classList.add("hidden");
+  document.getElementById("loginPage").style.display = "block";
+}
+
+async function retrievePassword(){
+
+await loadCloudBackup(); // ✅ IMPORTANT
+
+users = JSON.parse(localStorage.getItem("users") || "{}");
+
+let email = document.getElementById("forgotEmail").value.trim();
+
+for (let username in users) {
+if (users[username].email === email) {
+alert(`Your password for ${username}: ${users[username].password}`);
+return;
+}
+}
+
+alert("Email not found");
+
+  }
+
+
+
+function payReferralCommission(username, amount){
+
+let level1Id = users[username].referrer;
+let level1User = findUserById(level1Id);
+
+if(level1User && users[level1User]){
+
+let commission1 = amount * 0.10;
+
+users[level1User].balance += commission1;
+users[level1User].referralBalance = (users[level1User].referralBalance || 0) + commission1;
+users[level1User].refEarnings = (users[level1User].refEarnings || 0) + commission1;
+
+
+// LEVEL 2
+let level2Id = users[level1User].referrer;
+let level2User = findUserById(level2Id);
+
+if(level2User && users[level2User]){
+
+let commission2 = amount * 0.05;
+
+users[level2User].balance += commission2;
+users[level2User].referralBalance = (users[level2User].referralBalance || 0) + commission2;
+users[level2User].refEarnings = (users[level2User].refEarnings || 0) + commission2;
+
+
+// LEVEL 3
+let level3Id = users[level2User].referrer;
+let level3User = findUserById(level3Id);
+
+if(level3User && users[level3User]){
+
+let commission3 = amount * 0.02;
+
+users[level3User].balance += commission3;
+users[level3User].referralBalance = (users[level3User].referralBalance || 0) + commission3;
+users[level3User].refEarnings = (users[level3User].refEarnings || 0) + commission3;
+
+}
+
+}
+
+}
+
+localStorage.setItem("users", JSON.stringify(users));
+syncUsersToCloud();
+
+  }
+  
+
+
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+  
+
+function openCart(){
+
+document.getElementById("taskHome").style.display="none";
+document.getElementById("cartPage").style.display="block";
+document.getElementById("checkoutPage").style.display="none";
+
+let container=document.getElementById("cartItems");
+
+container.innerHTML="";
+
+let total=0;
+
+for(let id in cart){
+
+let p=cart[id];
+
+total+=p.price*p.qty;
+
+container.innerHTML+=`
+
+<div style="border-bottom:1px solid #ccc;padding:10px">
+
+<h4>${p.title}</h4>
+
+<p>$${p.price}</p>
+
+<button onclick="decreaseQty(${id})">-</button>
+
+<span style="margin:0 10px">${p.qty}</span>
 <button onclick="increaseQty(${id})">+</button>
 
 </div>
