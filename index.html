@@ -652,30 +652,19 @@ async function loadCloudBackup(){
 let usersDoc = await db.collection("siteData").doc("users").get();
 let withdrawDoc = await db.collection("siteData").doc("withdrawals").get();
 
-let localUsers = JSON.parse(localStorage.getItem("users") || "{}");
-
 if(usersDoc.exists){
-
-let cloudUsers = usersDoc.data().users || {};
-
-/* ✅ MERGE CLOUD + LOCAL */
-users = {...cloudUsers, ...localUsers};
-
-localStorage.setItem("users", JSON.stringify(users));
-
+  users = usersDoc.data().users || {};
+  localStorage.setItem("users", JSON.stringify(users));
 }
 
 if(withdrawDoc.exists){
-
-withdrawals = withdrawDoc.data().withdrawals || [];
-
-localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
-
+  withdrawals = withdrawDoc.data().withdrawals || [];
+  localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
 }
 
   }
 
-
+  
   
 let withdrawals=JSON.parse(localStorage.getItem("withdrawals")||"[]");
 
@@ -953,7 +942,26 @@ syncUsersToCloud();
 
 
 
+function renderTasks(){
 
+let container = document.getElementById("videoTasksContainer");
+
+container.innerHTML = "";
+
+videoTasks.forEach(task => {
+
+container.innerHTML += `
+<div class="video-card">
+  <img src="${thumbnails[Math.floor(Math.random()*thumbnails.length)]}">
+  <h4>${task.title}</h4>
+  <p>Earn $${task.reward}</p>
+  <button onclick="startTask(${task.id}, ${task.reward})">Start</button>
+</div>
+`;
+
+});
+
+}
 
   
 
@@ -1284,6 +1292,9 @@ document.getElementById("userIdDisplay").innerText = users[currentUser].userId;
 updateBalance();
 updateProgress();
 renderProducts();
+renderTasks(); // ✅ ADD THIS
+
+  
 
   }
 
