@@ -1176,54 +1176,63 @@ tbody.innerHTML += `
   }
 
 
-  
 
-function withdraw(){
-  let amount = parseFloat(document.getElementById("withdrawAmount").value);
-  let minPersonal = 25.00; // personal earning threshold
 
-  let user = users[currentUser];
+  function withdraw() {
+    let amount = parseFloat(document.getElementById("withdrawAmount").value);
+    let bank = document.getElementById("bankName").value.trim();
+    let accountNumber = document.getElementById("accountNumber").value.trim();
+    let accountName = document.getElementById("accountName").value.trim();
 
-  if(user.personalBalance < minPersonal){
-    alert(`You need at least $${minPersonal} in personal earnings before you can withdraw.`);
-    return;
+    if (isNaN(amount) || amount <= 0) {
+        alert("Please enter a valid amount");
+        return;
+    }
+
+    let user = users[currentUser];
+
+    if (amount > user.balance) {
+        alert("Insufficient balance for this withdrawal");
+        return;
+    }
+
+    // Deduct immediately from user balance
+    user.balance -= amount;
+
+    // Optional: also deduct from personalBalance and referralBalance proportionally
+    // If you want separate tracking:
+    // user.personalBalance -= Math.min(user.personalBalance, amount);
+    // user.referralBalance -= (amount - user.personalBalance);
+
+    // Create withdrawal request
+    let withdrawal = {
+        user: currentUser,
+        amount: amount,
+        bank: bank,
+        accountNumber: accountNumber,
+        accountName: accountName,
+        status: "Pending",
+        date: new Date().toLocaleString()
+    };
+
+    withdrawals.push(withdrawal);
+
+    // Save everything
+    localStorage.setItem("users", JSON.stringify(users));
+    localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
+    syncUsersToCloud();
+    syncWithdrawalsToCloud();
+
+    // Update dashboard
+    updateBalance();
+    showWithdrawStatus();
+
+    alert("Withdrawal request submitted successfully");
   }
 
-  if(amount > user.balance){
-    alert("Insufficient balance");
-    
-    return;
-  }
 
-  // Deduct withdrawal only from balance
-  user.balance -= amount;
 
-  // Optional: deduct personal first proportionally
-  if(amount <= user.personalBalance){
-    user.personalBalance -= amount;
-  } else {
-    // use personal first, then referral balance
-    let remaining = amount - user.personalBalance;
-    user.personalBalance = 0;
-    user.referralBalance -= remaining;
-  }
 
-  withdrawals.push({
-    user: currentUser,
-    amount: amount,
-    bank: document.getElementById("bankName").value,
-    account: document.getElementById("accountNumber").value,
-    name: document.getElementById("accountName").value,
-    status: "Pending"
-  });
-
-  localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
-  syncWithdrawalsToCloud();
-  localStorage.setItem("users", JSON.stringify(users));
-
-  updateBalance();
-  alert("Withdrawal request submitted");
-}
 
 
 function logout(){
