@@ -1191,18 +1191,42 @@ tbody.innerHTML += `
 
     let user = users[currentUser];
 
-    if (amount > user.balance) {
-        alert("Insufficient balance for this withdrawal");
+    // Minimum personal balance check
+    if (user.personalBalance < 25 && user.balance < amount) {
+        alert("You need at least $25 in personal balance or enough referral balance to withdraw");
         return;
     }
 
-    // Deduct immediately from user balance
-    user.balance -= amount;
+    // Check total available balance
+    if (amount > user.balance) {
+        alert("Insufficient total balance for this withdrawal");
+        return;
+    }
 
-    // Optional: also deduct from personalBalance and referralBalance proportionally
-    // If you want separate tracking:
-    // user.personalBalance -= Math.min(user.personalBalance, amount);
-    // user.referralBalance -= (amount - user.personalBalance);
+    // Deduct from personal balance first
+    let remaining = amount;
+
+    if (user.personalBalance >= remaining) {
+        user.personalBalance -= remaining;
+        remaining = 0;
+    } else {
+        remaining -= user.personalBalance;
+        user.personalBalance = 0;
+    }
+
+    // Then deduct from referral balance
+    if (remaining > 0) {
+        if (user.referralBalance >= remaining) {
+            user.referralBalance -= remaining;
+            remaining = 0;
+        } else {
+            alert("Insufficient referral balance for this withdrawal");
+            return;
+        }
+    }
+
+    // Deduct from total balance
+    user.balance -= amount;
 
     // Create withdrawal request
     let withdrawal = {
@@ -1217,7 +1241,7 @@ tbody.innerHTML += `
 
     withdrawals.push(withdrawal);
 
-    // Save everything
+    // Save to localStorage and cloud
     localStorage.setItem("users", JSON.stringify(users));
     localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
     syncUsersToCloud();
@@ -1227,7 +1251,7 @@ tbody.innerHTML += `
     updateBalance();
     showWithdrawStatus();
 
-    alert("Withdrawal request submitted successfully");
+    alert(`Withdrawal request of $${amount.toFixed(2)} submitted successfully!`);
   }
 
 
