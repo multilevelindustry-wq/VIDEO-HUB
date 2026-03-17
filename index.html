@@ -855,7 +855,7 @@ document.getElementById("loginPage").style.display="block";
 }
   
 
-function login(){
+async function login(){
 users = JSON.parse(localStorage.getItem("users") || "{}");
   
 let username=document.getElementById("usernameLogin").value;
@@ -1082,7 +1082,8 @@ let percent = (count / max) * 100;
 
 document.getElementById("progressBar").style.width = percent + "%";
 document.getElementById("progressBar").innerText = Math.floor(percent) + "%";
-  
+
+  }
 
 
 function showTasks(){
