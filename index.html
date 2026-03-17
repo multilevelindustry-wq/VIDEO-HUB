@@ -784,26 +784,26 @@ document.getElementById("registerPage").classList.remove("hidden");
 
 
 
+  async function register(){
 
-function register(){
+users = JSON.parse(localStorage.getItem("users") || "{}");
 
 let username=document.getElementById("regUsername").value;
 let email=document.getElementById("regEmail").value;
 let password=document.getElementById("regPassword").value;
 let phone=document.getElementById("regPhone").value;
-let ref=document.getElementById("regRef").value;
 
-  if(!username || !email || !password || !phone){
-alert("Please fill all fields");
-return;
-  }
-  
-if(users[username]){
-alert("Username already exists");
+if(!username || !email || !password || !phone){
+alert("Fill all fields");
 return;
 }
 
-// check duplicate email
+if(users[username]){
+alert("Username exists");
+return;
+}
+
+    // check duplicate email
 for(let u in users){
 if(users[u].email === email){
 alert("Email already registered");
@@ -813,52 +813,35 @@ return;
 
 let userId="U"+Math.floor(Math.random()*1000000);
 
-
-
 users[username] = {
-  email: email,
-  phone: phone,        // if added
-  password: password,
-  balance: 0,          // total balance
-  personalBalance: 0,  // user earned from self tasks/products
-  referralBalance: 0,  // earned from referrals
-  userId: userId,
-  dailyTasks: {},
-  referrer: null,
-  refEarnings: 0
+email, phone, password,
+balance:0,
+personalBalance:0,
+referralBalance:0,
+userId,
+dailyTasks:{},
+referrer:null,
+refEarnings:0
 };
 
-
-if(ref){
-
-for(let u in users){
-
-if(users[u].userId===ref){
-
-users[username].referrer=u;
-
-}
-
-}
-
-}
-
-  localStorage.setItem("users", JSON.stringify(users));
+localStorage.setItem("users", JSON.stringify(users));
 
 syncUsersToCloud();
-  await loadCloudBackup();
+await loadCloudBackup(); // ✅ VERY IMPORTANT
 
-alert("Account created successfully. Please login.");
+alert("Account created successfully");
 
 document.getElementById("registerPage").classList.add("hidden");
 document.getElementById("loginPage").style.display="block";
-  
-}
+
+  }
 
 
 
 
   async function login(){
+
+await loadCloudBackup(); // ✅ VERY IMPORTANT
 
 users = JSON.parse(localStorage.getItem("users") || "{}");
 
@@ -875,11 +858,9 @@ alert("Wrong password");
 return;
 }
 
-/* ✅ SET USER FIRST */
 currentUser = username;
 localStorage.setItem("currentUser", username);
 
-/* ✅ NOW SAFE TO CALL */
 await checkDailyReset();
 
 completedTasks = users[currentUser].dailyTasks || {};
@@ -887,16 +868,13 @@ completedTasks = users[currentUser].dailyTasks || {};
 document.getElementById("loginPage").style.display = "none";
 document.getElementById("dashboard").classList.remove("hidden");
 
-/* USER DETAILS */
 document.getElementById("userNameDisplay").innerText = username;
 document.getElementById("userIdDisplay").innerText = users[username].userId;
 
-/* REF LINK FIX */
 let refId = users[currentUser].userId;
 let cleanURL = window.location.origin + window.location.pathname;
 document.getElementById("refLink").value = cleanURL + "?ref=" + refId;
 
-/* LOAD UI */
 renderTasks();
 renderProducts();
 updateBalance();
@@ -1262,28 +1240,25 @@ document.addEventListener("click", resetTimer);
 document.addEventListener("keypress", resetTimer);
 document.addEventListener("scroll", resetTimer);
 
-window.onload = async function(){
 
-// Load cloud data
+  window.onload = async function(){
+
 await loadCloudBackup();
 
-// Load local users
 let localUsers = JSON.parse(localStorage.getItem("users") || "{}");
 
-// Merge cloud + local users
+/* ✅ MERGE instead of overwrite */
 users = {...users, ...localUsers};
 
-// Save merged users
 localStorage.setItem("users", JSON.stringify(users));
 
-// Load withdrawals
 withdrawals = JSON.parse(localStorage.getItem("withdrawals") || "[]");
 
 getReferralFromURL();
-
 startInactivityTimer();
 
 };
+
 
 
 let cart={};
@@ -1602,11 +1577,7 @@ document.getElementById("withdrawStatusBox").style.display="block";
 
 
 
-
-
-
-
-
+  
 function openForgotPassword() {
   document.getElementById("loginPage").style.display = "none";
   document.getElementById("forgotPasswordPage").classList.remove("hidden");
@@ -1617,16 +1588,23 @@ function backToLogin() {
   document.getElementById("loginPage").style.display = "block";
 }
 
-function retrievePassword() {
-  const email = document.getElementById("forgotEmail").value.trim();
-  let found = false;
-  
-  for (let username in users) {
-    if (users[username].email === email) {
-      alert(`Your password for ${username} is: ${users[username].password}`);
-      found = true;
-      break;
-    }
+async function retrievePassword(){
+
+await loadCloudBackup(); // ✅ IMPORTANT
+
+users = JSON.parse(localStorage.getItem("users") || "{}");
+
+let email = document.getElementById("forgotEmail").value.trim();
+
+for (let username in users) {
+if (users[username].email === email) {
+alert(`Your password for ${username}: ${users[username].password}`);
+return;
+}
+}
+
+alert("Email not found");
+
   }
 
   if (!found) {
