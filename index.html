@@ -883,29 +883,23 @@ updateProgress();
 
 
 
-  
+  async function completeTask(taskId, reward){
 
-async function completeTask(taskId, reward){
-
-let currentUser = localStorage.getItem("currentUser");
-
-if(!currentUser || !users[currentUser]) return;
-
-// prevent duplicate
 let tasks = users[currentUser].dailyTasks || {};
 
+// prevent duplicate
 if(tasks[taskId]){
 alert("Task already completed");
 return;
 }
 
-// mark task
+// save task
 tasks[taskId] = true;
 users[currentUser].dailyTasks = tasks;
 
-// add earnings
+// ✅ ADD MONEY
 users[currentUser].balance += reward;
-users[currentUser].personalEarnings += reward;
+users[currentUser].personalBalance += reward;
 
 // referral bonus
 if(users[currentUser].referrer){
@@ -913,25 +907,24 @@ if(users[currentUser].referrer){
 let refUser = users[currentUser].referrer;
 
 if(users[refUser]){
-users[refUser].refEarnings += reward * 0.1;
-}
+users[refUser].referralBalance += reward * 0.1;
 }
 
-// ✅ SAVE TO FIREBASE
-await db.collection("siteData").doc("users").set({
-users: users
-});
+}
 
-// ✅ SAVE LOCAL BACKUP
+// save
 localStorage.setItem("users", JSON.stringify(users));
+await db.collection("siteData").doc("users").set({ users });
 
 // update UI
 updateBalance();
 updateProgress();
 
-alert("Task completed! Earnings added");
+alert("Task completed!");
 
   }
+
+
 
 
 
@@ -982,7 +975,10 @@ container.innerHTML += `
   <img src="${thumbnails[Math.floor(Math.random()*thumbnails.length)]}">
   <h4>${task.title}</h4>
   <p>Earn $${task.reward}</p>
-  <button onclick="completeTask(1, 2)">Start Task</button>
+ ${users[currentUser]?.dailyTasks?.[task.id] ? 
+'<button disabled>Completed</button>' :
+`<button onclick="completeTask(${task.id}, ${task.reward})">Start Task</button>`
+  }
 </div>
 `;
 
@@ -1291,37 +1287,39 @@ document.addEventListener("click", resetTimer);
 document.addEventListener("keypress", resetTimer);
 document.addEventListener("scroll", resetTimer);
 
-  window.onload = async function(){
+  
+window.onload = async function(){
 
 await loadCloudBackup();
 
-let currentUser = localStorage.getItem("currentUser");
+currentUser = localStorage.getItem("currentUser");
 
 if(currentUser && users[currentUser]){
 
-// ✅ Show dashboard
+// Stay logged in ✅
 document.getElementById("loginPage").style.display="none";
 document.getElementById("dashboard").classList.remove("hidden");
 
 document.getElementById("userNameDisplay").innerText = currentUser;
 document.getElementById("userIdDisplay").innerText = users[currentUser].userId;
 
+generateReferralLink();
 updateBalance();
 updateProgress();
 renderProducts();
 renderTasks();
-generateReferralLink(); // ✅ IMPORTANT
+
+startInactivityTimer(); // keep your 10min logout
 
 }else{
 
-// ✅ FORCE LOGIN PAGE
+// Only show login if no user
 document.getElementById("loginPage").style.display="block";
 document.getElementById("dashboard").classList.add("hidden");
 
 }
 
   }
-
 
 
 
