@@ -904,11 +904,9 @@ function loadReferrals(){
 let container = document.getElementById("refList");
 container.innerHTML = "";
 
-let myId = users[currentUser].userId;
-
 for(let u in users){
 
-if(users[u].referrer === myId){
+if(users[u].referrer === users[currentUser].userId){
 
 container.innerHTML += `<p>${u}</p>`;
 
@@ -939,16 +937,9 @@ users[currentUser].dailyTasks = tasks;
 users[currentUser].balance += reward;
 users[currentUser].personalBalance += reward;
 
-// referral bonus
-if(users[currentUser].referrer){
+  }
 
-let refUser = users[currentUser].referrer;
-
-if(users[refUser]){
-users[refUser].referralBalance += reward * 0.1;
-}
-
-}
+                     
 
 // save
 localStorage.setItem("users", JSON.stringify(users));
@@ -1170,6 +1161,8 @@ loadRefs();
 
 
 function loadRefs(){
+   
+if(users[u].referrer === users[currentUser].userId)
 
 let tbody=document.getElementById("refTable");
 tbody.innerHTML="";
@@ -1739,41 +1732,42 @@ alert("Email not found");
 
 function payReferralCommission(username, amount){
 
-let refId = users[username].referrer;
+let level1Id = users[username].referrer;
+let level1User = findUserById(level1Id);
 
-let level1User = findUserById(refId);
-
-if(level1User){
+if(level1User && users[level1User]){
 
 let commission1 = amount * 0.10;
 
 users[level1User].balance += commission1;
-users[level1User].referralBalance += commission1;
-users[level1User].refEarnings += commission1;
+users[level1User].referralBalance = (users[level1User].referralBalance || 0) + commission1;
+users[level1User].refEarnings = (users[level1User].refEarnings || 0) + commission1;
+
 
 // LEVEL 2
 let level2Id = users[level1User].referrer;
 let level2User = findUserById(level2Id);
 
-if(level2User){
+if(level2User && users[level2User]){
 
 let commission2 = amount * 0.05;
 
 users[level2User].balance += commission2;
-users[level2User].referralBalance += commission2;
-users[level2User].refEarnings += commission2;
+users[level2User].referralBalance = (users[level2User].referralBalance || 0) + commission2;
+users[level2User].refEarnings = (users[level2User].refEarnings || 0) + commission2;
+
 
 // LEVEL 3
 let level3Id = users[level2User].referrer;
 let level3User = findUserById(level3Id);
 
-if(level3User){
+if(level3User && users[level3User]){
 
 let commission3 = amount * 0.02;
 
 users[level3User].balance += commission3;
-users[level3User].referralBalance += commission3;
-users[level3User].refEarnings += commission3;
+users[level3User].referralBalance = (users[level3User].referralBalance || 0) + commission3;
+users[level3User].refEarnings = (users[level3User].refEarnings || 0) + commission3;
 
 }
 
@@ -1783,8 +1777,9 @@ users[level3User].refEarnings += commission3;
 
 localStorage.setItem("users", JSON.stringify(users));
 syncUsersToCloud();
-  }
 
+  }
+  
 
 
 </script>
