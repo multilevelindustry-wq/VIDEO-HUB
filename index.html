@@ -979,7 +979,7 @@ container.innerHTML += `
   <p>Earn $${task.reward}</p>
   ${
     isCompleted 
-    ? '<button disabled>Completed</button>' 
+    ? 
     : `<button onclick="completeTask(${task.id}, ${task.reward})">Start Task</button>`
   }
 </div>
