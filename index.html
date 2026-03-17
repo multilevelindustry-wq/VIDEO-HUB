@@ -882,27 +882,54 @@ updateProgress();
   }
 
 
-async function completeTask(){
 
-await checkDailyReset(); // CHECK RESET FIRST
+  
 
-/* ✅ FIX STARTS HERE */
+async function completeTask(taskId, reward){
 
+let currentUser = localStorage.getItem("currentUser");
+
+if(!currentUser || !users[currentUser]) return;
+
+// prevent duplicate
 let tasks = users[currentUser].dailyTasks || {};
-tasks[Date.now()] = true;
 
+if(tasks[taskId]){
+alert("Task already completed");
+return;
+}
+
+// mark task
+tasks[taskId] = true;
 users[currentUser].dailyTasks = tasks;
 
-/* ✅ FIX ENDS HERE */
+// add earnings
+users[currentUser].balance += reward;
+users[currentUser].personalEarnings += reward;
 
+// referral bonus
+if(users[currentUser].referrer){
+
+let refUser = users[currentUser].referrer;
+
+if(users[refUser]){
+users[refUser].refEarnings += reward * 0.1;
+}
+}
+
+// ✅ SAVE TO FIREBASE
+await db.collection("siteData").doc("users").set({
+users: users
+});
+
+// ✅ SAVE LOCAL BACKUP
 localStorage.setItem("users", JSON.stringify(users));
-syncUsersToCloud();
 
-/* SAVE FIREBASE TIME */
+// update UI
+updateBalance();
+updateProgress();
 
-await db.collection("userActivity").doc(currentUser).set({
-lastTaskTime: firebase.firestore.FieldValue.serverTimestamp()
-}, { merge: true });
+alert("Task completed! Earnings added");
 
   }
 
@@ -955,7 +982,7 @@ container.innerHTML += `
   <img src="${thumbnails[Math.floor(Math.random()*thumbnails.length)]}">
   <h4>${task.title}</h4>
   <p>Earn $${task.reward}</p>
-  <button onclick="startTask(${task.id}, ${task.reward})">Start</button>
+  <button onclick="completeTask(1, 2)">Start Task</button>
 </div>
 `;
 
@@ -1264,25 +1291,15 @@ document.addEventListener("click", resetTimer);
 document.addEventListener("keypress", resetTimer);
 document.addEventListener("scroll", resetTimer);
 
-
   window.onload = async function(){
 
 await loadCloudBackup();
 
-let localUsers = JSON.parse(localStorage.getItem("users") || "{}");
+let currentUser = localStorage.getItem("currentUser");
 
-/* ✅ MERGE instead of overwrite */
-users = {...users, ...localUsers};
+if(currentUser && users[currentUser]){
 
-localStorage.setItem("users", JSON.stringify(users));
-
-withdrawals = JSON.parse(localStorage.getItem("withdrawals") || "[]");
-
-getReferralFromURL();
-startInactivityTimer();
-
-    if(currentUser && users[currentUser]){
-
+// ✅ Show dashboard
 document.getElementById("loginPage").style.display="none";
 document.getElementById("dashboard").classList.remove("hidden");
 
@@ -1292,16 +1309,41 @@ document.getElementById("userIdDisplay").innerText = users[currentUser].userId;
 updateBalance();
 updateProgress();
 renderProducts();
-renderTasks(); // ✅ ADD THIS
+renderTasks();
+generateReferralLink(); // ✅ IMPORTANT
 
-  
+}else{
+
+// ✅ FORCE LOGIN PAGE
+document.getElementById("loginPage").style.display="block";
+document.getElementById("dashboard").classList.add("hidden");
+
+}
 
   }
 
-};
 
 
 
+
+function generateReferralLink(){
+
+let currentUser = localStorage.getItem("currentUser");
+
+if(!currentUser || !users[currentUser]) return;
+
+let refId = users[currentUser].userId;
+
+let cleanURL = window.location.origin + window.location.pathname;
+
+document.getElementById("refLink").value = cleanURL + "?ref=" + refId;
+
+  }
+
+
+
+  
+  
 let cart={};
 
 function renderProducts(){
