@@ -673,57 +673,6 @@ let withdrawals=JSON.parse(localStorage.getItem("withdrawals")||"[]");
 
 let completedTasks={};
   
-  async function completeTask(){
-
-await checkDailyReset(); // CHECK RESET FIRST
-
-users[currentUser].dailyTasks = (users[currentUser].dailyTasks || 0) + 1;
-
-localStorage.setItem("users", JSON.stringify(users));
-syncUsersToCloud();
-
-/* SAVE FIREBASE TIME */
-
-await db.collection("userActivity").doc(currentUser).set({
-lastTaskTime: firebase.firestore.FieldValue.serverTimestamp()
-}, { merge: true });
-
-  }
-
-  async function checkDailyReset(){
-
-let doc = await db.collection("userActivity").doc(currentUser).get();
-
-if(!doc.exists){
-return;
-}
-
-let data = doc.data();
-
-if(!data.lastTaskTime){
-return;
-}
-
-let lastTime = data.lastTaskTime.toDate();
-let now = new Date();
-
-/* CHECK 24 HOURS DIFFERENCE */
-
-let diff = (now - lastTime) / (1000 * 60 * 60);
-
-if(diff >= 24){
-
-users[currentUser].dailyTasks = 0;
-
-localStorage.setItem("users", JSON.stringify(users));
-syncUsersToCloud();
-
-}
-
-  }
-
-
-  
 let videoTasks=[];
 
 for(let i=1;i<=60;i++){
@@ -975,6 +924,62 @@ container.appendChild(card);
 
 }
 
+
+
+  async function completeTask(){
+
+await checkDailyReset(); // CHECK RESET FIRST
+
+users[currentUser].dailyTasks = (users[currentUser].dailyTasks || 0) + 1;
+
+localStorage.setItem("users", JSON.stringify(users));
+syncUsersToCloud();
+
+/* SAVE FIREBASE TIME */
+
+await db.collection("userActivity").doc(currentUser).set({
+lastTaskTime: firebase.firestore.FieldValue.serverTimestamp()
+}, { merge: true });
+
+  }
+
+  async function checkDailyReset(){
+
+let doc = await db.collection("userActivity").doc(currentUser).get();
+
+if(!doc.exists){
+return;
+}
+
+let data = doc.data();
+
+if(!data.lastTaskTime){
+return;
+}
+
+let lastTime = data.lastTaskTime.toDate();
+let now = new Date();
+
+/* CHECK 24 HOURS DIFFERENCE */
+
+let diff = (now - lastTime) / (1000 * 60 * 60);
+
+if(diff >= 24){
+
+users[currentUser].dailyTasks = 0;
+
+localStorage.setItem("users", JSON.stringify(users));
+syncUsersToCloud();
+
+}
+
+  }
+
+
+
+
+
+  
 
 function startTask(id,reward){
 
