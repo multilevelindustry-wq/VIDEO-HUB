@@ -208,7 +208,8 @@ loadCloudData();
 </div>
 
 <script>
-
+let users = {};
+let withdrawals = [];
 
   function findUserById(userId){
 for(let u in users){
@@ -224,7 +225,11 @@ async function login(){
 
 if(document.getElementById("pass").value==="admin123"){
 
-await loadCloudData(); // ✅ WAIT for Firebase
+await loadCloudData();
+
+// ✅ SET GLOBAL VARIABLES
+users = JSON.parse(localStorage.getItem("users") || "{}");
+withdrawals = JSON.parse(localStorage.getItem("withdrawals") || "[]");
 
 document.getElementById("panel").style.display="block";
 
@@ -232,6 +237,7 @@ loadUsers();
 loadUserInfo();
 loadWithdrawals();
 resetMonthlyStats();
+
 }
 
 }
@@ -257,6 +263,84 @@ localStorage.setItem("siteStats",JSON.stringify(stats));
 
 }
 
+
+
+
+
+  function loadUserInfo(){
+
+let users = JSON.parse(localStorage.getItem("users") || "{}");
+
+let table = document.getElementById("usersInfoTable");
+
+table.innerHTML = "";
+
+for(let u in users){
+
+let user = users[u]; // ✅ VERY IMPORTANT
+
+let refName = findUserById(user.referrer);
+
+table.innerHTML += `
+<tr>
+
+<td>${u}</td>
+<td>${user.email||""}</td>
+<td>${user.phone||""}</td>
+<td>${user.userId||""}</td>
+<td>$${(user.balance||0).toFixed(2)}</td>
+<td>${refName ? refName : "None"}</td>
+
+</tr>
+`;
+
+}
+
+  }
+
+  
+
+
+function loadWithdrawals(){
+
+let tbody = document.getElementById("withdrawTable");
+
+tbody.innerHTML = "";
+
+withdrawals.forEach((w,i)=>{
+
+tbody.innerHTML += `
+
+<tr>
+
+<td>${w.user}</td>
+<td>$${w.amount}</td>
+<td>${w.bank}</td>
+<td>${w.account}</td>
+<td>${w.name}</td>
+<td>${w.status}</td>
+
+<td>
+
+${w.status==="Pending"?
+`<button onclick="approve(${i})">Approve</button>
+<button onclick="reject(${i})" style="background:red">Reject</button>`
+:""}
+
+</td>
+
+</tr>
+
+`;
+
+});
+
+  }
+
+
+
+
+  
 function loadUsers(){
 
 let users=JSON.parse(localStorage.getItem("users")||"{}");
@@ -317,120 +401,53 @@ document.getElementById("totalWithdrawals").innerText=totalWithdrawals;
 }
 
 
-function loadUserInfo(){
 
-let users=JSON.parse(localStorage.getItem("users")||"{}");
-
-let table=document.getElementById("usersInfoTable");
-
-table.innerHTML="";
-
-for(let u in users){
-let refName = findUserById(user.referrer);
-
-table.innerHTML += `
-<tr>
-
-<td>${u}</td>
-<td>${user.email||""}</td>
-<td>${user.phone||""}</td>
-<td>${user.userId||""}</td>
-<td>$${(user.balance||0).toFixed(2)}</td>
-<td>${refName ? refName : "None"}</td>
-
-</tr>
-`;
-  
-}
-
-}
-  
-
-function loadWithdrawals(){
-
-let withdrawals=JSON.parse(localStorage.getItem("withdrawals")||"[]");
-
-let tbody=document.getElementById("withdrawTable");
-
-tbody.innerHTML="";
-
-withdrawals.forEach((w,i)=>{
-
-tbody.innerHTML+=`
-
-<tr>
-
-<td>${w.user}</td>
-<td>$${w.amount}</td>
-<td>${w.bank}</td>
-<td>${w.account}</td>
-<td>${w.name}</td>
-<td>${w.status}</td>
-
-<td>
-
-${w.status==="Pending"?
-`<button onclick="approve(${i})">Approve</button>
-<button onclick="reject(${i})" style="background:red">Reject</button>`
-:""}
-
-</td>
-
-</tr>
-
-`;
-
-});
-
-}
-
-
+ 
 function approve(i){
 
-let withdrawals=JSON.parse(localStorage.getItem("withdrawals") || "[]");
+withdrawals[i].status = "Approved";
 
-withdrawals[i].status="Approved";
+localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
 
-localStorage.setItem("withdrawals",JSON.stringify(withdrawals));
-
-syncWithdrawalsToCloud();   // SAVE TO FIREBASE
+syncWithdrawalsToCloud();
 
 loadWithdrawals();
 loadUsers();
 
-   }
-  
-
-function reject(i){
-
-let withdrawals=JSON.parse(localStorage.getItem("withdrawals") || "[]");
-
-let users=JSON.parse(localStorage.getItem("users") || "{}");
-
-let w=withdrawals[i];
-
-w.status="Rejected";
-
-/* return money to user */
-
-if(users[w.user]){
-
-users[w.user].balance += parseFloat(w.amount);
-
 }
 
-localStorage.setItem("users",JSON.stringify(users));
-localStorage.setItem("withdrawals",JSON.stringify(withdrawals));
 
-syncUsersToCloud();         // SAVE USERS
-syncWithdrawalsToCloud();   // SAVE WITHDRAWALS
+
+  function reject(i){
+
+let w = withdrawals[i];
+
+w.status = "Rejected";
+
+if(users[w.user]){
+users[w.user].balance += parseFloat(w.amount);
+}
+
+localStorage.setItem("users", JSON.stringify(users));
+localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
+
+syncUsersToCloud();
+syncWithdrawalsToCloud();
 
 loadWithdrawals();
 loadUsers();
 
 alert("Withdrawal Rejected and Balance Returned");
 
-}
+      }
+
+
+
+  
+
+  
+
+
 
 
   
