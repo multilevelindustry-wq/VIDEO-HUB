@@ -853,43 +853,55 @@ document.getElementById("registerPage").classList.add("hidden");
 document.getElementById("loginPage").style.display="block";
   
 }
-  
 
-async function login(){
+
+
+
+  async function login(){
+
 users = JSON.parse(localStorage.getItem("users") || "{}");
-  
-let username=document.getElementById("usernameLogin").value;
-let password=document.getElementById("passwordLogin").value;
 
-if(!users[username]){alert("User not found");return;}
+let username = document.getElementById("usernameLogin").value;
+let password = document.getElementById("passwordLogin").value;
 
-if(users[username].password!==password){alert("Wrong password");return;}
-await checkDailyReset();
-  
-currentUser=username;
+if(!users[username]){
+alert("User not found");
+return;
+}
+
+if(users[username].password !== password){
+alert("Wrong password");
+return;
+}
+
+/* ✅ SET USER FIRST */
+currentUser = username;
 localStorage.setItem("currentUser", username);
-  
-completedTasks=users[currentUser].dailyTasks||{};
 
-document.getElementById("loginPage").style.display="none";
+/* ✅ NOW SAFE TO CALL */
+await checkDailyReset();
+
+completedTasks = users[currentUser].dailyTasks || {};
+
+document.getElementById("loginPage").style.display = "none";
 document.getElementById("dashboard").classList.remove("hidden");
+
+/* USER DETAILS */
+document.getElementById("userNameDisplay").innerText = username;
+document.getElementById("userIdDisplay").innerText = users[username].userId;
+
+/* REF LINK FIX */
 let refId = users[currentUser].userId;
-
-document.getElementById("userNameDisplay").innerText=username;
-document.getElementById("userIdDisplay").innerText=users[username].userId;
-
-
- let cleanURL = window.location.origin + window.location.pathname;
+let cleanURL = window.location.origin + window.location.pathname;
 document.getElementById("refLink").value = cleanURL + "?ref=" + refId;
 
+/* LOAD UI */
 renderTasks();
-renderProducts();   // ✅ ADD THIS LINE
-
+renderProducts();
 updateBalance();
 updateProgress();
 
-}
-
+  }
 
 
 function renderTasks(){
@@ -966,7 +978,7 @@ let diff = (now - lastTime) / (1000 * 60 * 60);
 
 if(diff >= 24){
 
-users[currentUser].dailyTasks = 0;
+users[currentUser].dailyTasks = {};
 
 localStorage.setItem("users", JSON.stringify(users));
 syncUsersToCloud();
@@ -1073,7 +1085,7 @@ function updateBalance(){
 function updateProgress(){
 
 
-  let count = users[currentUser].dailyTasks || 0;
+  let count = Object.keys(users[currentUser].dailyTasks || {}).length;
 let max = 50;
 
 document.getElementById("adsCount").innerText = count + " / " + max;
