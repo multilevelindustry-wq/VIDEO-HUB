@@ -961,7 +961,6 @@ syncUsersToCloud();
   }
 
 
-
 function renderTasks(){
 
 let container = document.getElementById("videoTasksContainer");
@@ -970,24 +969,19 @@ container.innerHTML = "";
 
 videoTasks.forEach(task => {
 
-let isCompleted = users[currentUser]?.dailyTasks?.[task.id];
-
 container.innerHTML += `
 <div class="video-card">
   <img src="${thumbnails[Math.floor(Math.random()*thumbnails.length)]}">
   <h4>${task.title}</h4>
   <p>Earn $${task.reward}</p>
-  ${
-    isCompleted 
-    ? 
-    : `<button onclick="completeTask(${task.id}, ${task.reward})">Start Task</button>`
-  }
+  <button onclick="startTask(${task.id}, ${task.reward})">Start Task</button>
 </div>
 `;
 
 });
 
   }
+
 
   
 
