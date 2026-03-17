@@ -983,92 +983,91 @@ container.innerHTML += `
   }
 
 
-  
-
 function startTask(taskId, reward){
 
-    // prevent duplicate
     if(users[currentUser].dailyTasks[taskId]){
         alert("Task already completed");
         return;
     }
 
-    runAdsSequence(() => {
+    runAdsSequenceSameTab(reward, (earnedAmount) => {
 
-        // credit reward
         let user = users[currentUser];
 
-        // mark task as complete
         if(!user.dailyTasks) user.dailyTasks = {};
         user.dailyTasks[taskId] = true;
 
-        // add reward to balances
-        user.personalBalance = (user.personalBalance || 0) + reward;
-        user.balance = (user.balance || 0) + reward;
+        user.personalBalance = (user.personalBalance || 0) + earnedAmount;
+        user.balance = (user.balance || 0) + earnedAmount;
 
         // referral bonus
         if(user.referrer && users[user.referrer]){
-            users[user.referrer].referralBalance += reward * 0.1;
-            users[user.referrer].refEarnings = users[user.referrer].referralBalance;
+            payReferralCommission(currentUser, earnedAmount);
         }
 
-        // save
         localStorage.setItem("users", JSON.stringify(users));
         db.collection("siteData").doc("users").set({ users });
 
-        // update UI
         updateBalance();
         updateProgress();
         renderTasks();
 
-        alert("Reward credited: $" + reward);
+        alert(`Reward credited: $${earnedAmount.toFixed(2)} (based on ads successfully shown)`);
     });
 
   }
   
+  
 
 
-function runAdsSequence(callback){
+  
 
-let ads=[
 
-{url:"https://bendspecimen.com/k2hh5fxy0?key=927a8a7981d8aa62bd9f8046e6bdc33a",time:20000},
-{url:"https://bendspecimen.com/cq18ekrgz?key=e0da9cb89f9c35514ff37e965ee371e1",time:20000},
-{url:"https://bendspecimen.com/p2mzhe1ja?key=1ff8c4fca5c345aa186e231b723a8542",time:20000},
-{url:"https://bendspecimen.com/brat1gza?key=9056405a95930b711c4ff1b10c376889",time:20000}
+      async function runAdsSequenceSameTab(totalReward, callback){
 
-];
+    let ads = [
+        "https://bendspecimen.com/k2hh5fxy0?key=927a8a7981d8aa62bd9f8046e6bdc33a",
+        "https://bendspecimen.com/cq18ekrgz?key=e0da9cb89f9c35514ff37e965ee371e1",
+        "https://bendspecimen.com/p2mzhe1ja?key=1ff8c4fca5c345aa186e231b723a8542",
+        "https://bendspecimen.com/brat1gza?key=9056405a95930b711c4ff1b10c376889"
+    ];
 
-let i=0;
+    let adTime = 20000; // 20 seconds per ad
+    let adsShown = 0;
 
-function nextAd(){
+    const container = document.getElementById("videoTasksContainer");
+    
+    // Create ad container
+    let adDiv = document.createElement("div");
+    adDiv.style.width = "100%";
+    adDiv.style.height = "400px";
+    adDiv.style.border = "1px solid #ccc";
+    adDiv.style.margin = "10px 0";
+    container.innerHTML = ""; // clear tasks
+    container.appendChild(adDiv);
 
-if(i>=ads.length){
+    for(let i = 0; i < ads.length; i++){
+        adDiv.innerHTML = `<iframe src="${ads[i]}" width="100%" height="100%" frameborder="0"></iframe>`;
 
-callback();
-return;
+        try {
+            await new Promise(res => setTimeout(res, adTime));
+            adsShown++;
+        } catch(e){
+            // skip broken ad
+            continue;
+        }
+    }
 
-}
+    adDiv.remove();
 
-let ad=ads[i];
+    // divide total reward by ads shown
+    let finalReward = (totalReward / ads.length) * adsShown;
 
-let w=window.open(ad.url,"_blank");
+    callback(finalReward);
+  }
 
-setTimeout(()=>{
 
-try{w.close();}catch(e){}
 
-i++;
-
-nextAd();
-
-},ad.time);
-
-}
-
-nextAd();
-
-}
 
 
 function creditReward(id,reward){
@@ -1721,32 +1720,41 @@ function payReferralCommission(username, amount){
 
   if(level1 && users[level1]){
 
+    users[level1].balance = users[level1].balance || 0;
+    users[level1].referralBalance = users[level1].referralBalance || 0;
+    users[level1].refEarnings = users[level1].refEarnings || 0;
+
     let commission1 = amount * 0.10;
 
     users[level1].balance += commission1;
-    users[level1].referralBalance = (users[level1].referralBalance || 0) + commission1;
-    users[level1].refEarnings = (users[level1].refEarnings || 0) + commission1;
+    users[level1].referralBalance += commission1;
+    users[level1].refEarnings += commission1;
 
     let level2 = users[level1].referrer;
 
     if(level2 && users[level2]){
+      users[level2].balance = users[level2].balance || 0;
+      users[level2].referralBalance = users[level2].referralBalance || 0;
+      users[level2].refEarnings = users[level2].refEarnings || 0;
 
       let commission2 = amount * 0.05;
 
       users[level2].balance += commission2;
-      users[level2].referralBalance = (users[level2].referralBalance || 0) + commission2;
-      users[level2].refEarnings = (users[level2].refEarnings || 0) + commission2;
+      users[level2].referralBalance += commission2;
+      users[level2].refEarnings += commission2;
 
       let level3 = users[level2].referrer;
 
       if(level3 && users[level3]){
+        users[level3].balance = users[level3].balance || 0;
+        users[level3].referralBalance = users[level3].referralBalance || 0;
+        users[level3].refEarnings = users[level3].refEarnings || 0;
 
         let commission3 = amount * 0.02;
 
         users[level3].balance += commission3;
-        users[level3].referralBalance = (users[level3].referralBalance || 0) + commission3;
-        users[level3].refEarnings = (users[level3].refEarnings || 0) + commission3;
-
+        users[level3].referralBalance += commission3;
+        users[level3].refEarnings += commission3;
       }
     }
   }
@@ -1754,9 +1762,7 @@ function payReferralCommission(username, amount){
   localStorage.setItem("users", JSON.stringify(users));
   syncUsersToCloud();
 
-}
-
-
+  }
 
 </script>
 
