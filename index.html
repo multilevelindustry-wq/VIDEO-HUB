@@ -646,16 +646,22 @@ withdrawals: withdrawals
 
 }
 
+
 async function loadCloudBackup(){
 
 let usersDoc = await db.collection("siteData").doc("users").get();
 let withdrawDoc = await db.collection("siteData").doc("withdrawals").get();
 
+let localUsers = JSON.parse(localStorage.getItem("users") || "{}");
+
 if(usersDoc.exists){
 
-users = usersDoc.data().users || {};
+let cloudUsers = usersDoc.data().users || {};
 
-localStorage.setItem("users",JSON.stringify(users));
+/* ✅ MERGE CLOUD + LOCAL */
+users = {...cloudUsers, ...localUsers};
+
+localStorage.setItem("users", JSON.stringify(users));
 
 }
 
@@ -663,11 +669,13 @@ if(withdrawDoc.exists){
 
 withdrawals = withdrawDoc.data().withdrawals || [];
 
-localStorage.setItem("withdrawals",JSON.stringify(withdrawals));
+localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
 
 }
 
   }
+
+
   
 let withdrawals=JSON.parse(localStorage.getItem("withdrawals")||"[]");
 
@@ -1607,10 +1615,7 @@ alert("Email not found");
 
   }
 
-  if (!found) {
-    alert("Email not found. Please check and try again.");
-  }
-}
+  
 
 function payReferralCommission(username, amount){
 
