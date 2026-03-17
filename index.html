@@ -821,6 +821,8 @@ return;
 
 let userId="U"+Math.floor(Math.random()*1000000);
 
+let ref = document.getElementById("regRef").value;
+
 users[username] = {
 email, phone, password,
 balance:0,
@@ -828,7 +830,7 @@ personalBalance:0,
 referralBalance:0,
 userId,
 dailyTasks:{},
-referrer:null,
+referrer: ref || null,
 refEarnings:0
 };
 
@@ -891,14 +893,18 @@ updateProgress();
   }
 
 
-
-
-
-  async function completeTask(){
+async function completeTask(){
 
 await checkDailyReset(); // CHECK RESET FIRST
 
-users[currentUser].dailyTasks = (users[currentUser].dailyTasks || 0) + 1;
+/* ✅ FIX STARTS HERE */
+
+let tasks = users[currentUser].dailyTasks || {};
+tasks[Date.now()] = true;
+
+users[currentUser].dailyTasks = tasks;
+
+/* ✅ FIX ENDS HERE */
 
 localStorage.setItem("users", JSON.stringify(users));
 syncUsersToCloud();
@@ -910,6 +916,8 @@ lastTaskTime: firebase.firestore.FieldValue.serverTimestamp()
 }, { merge: true });
 
   }
+
+
 
   async function checkDailyReset(){
 
@@ -1264,6 +1272,20 @@ withdrawals = JSON.parse(localStorage.getItem("withdrawals") || "[]");
 
 getReferralFromURL();
 startInactivityTimer();
+
+    if(currentUser && users[currentUser]){
+
+document.getElementById("loginPage").style.display="none";
+document.getElementById("dashboard").classList.remove("hidden");
+
+document.getElementById("userNameDisplay").innerText = currentUser;
+document.getElementById("userIdDisplay").innerText = users[currentUser].userId;
+
+updateBalance();
+updateProgress();
+renderProducts();
+
+  }
 
 };
 
