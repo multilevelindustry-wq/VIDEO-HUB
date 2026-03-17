@@ -209,9 +209,22 @@ loadCloudData();
 
 <script>
 
-function login(){
+
+  function findUserById(userId){
+for(let u in users){
+if(users[u].userId === userId){
+return u; // ✅ return username
+}
+}
+return null;
+  }
+  
+
+async function login(){
 
 if(document.getElementById("pass").value==="admin123"){
+
+await loadCloudData(); // ✅ WAIT for Firebase
 
 document.getElementById("panel").style.display="block";
 
@@ -219,10 +232,12 @@ loadUsers();
 loadUserInfo();
 loadWithdrawals();
 resetMonthlyStats();
-
 }
 
 }
+
+  
+
 
 function resetMonthlyStats(){
 
@@ -311,11 +326,9 @@ let table=document.getElementById("usersInfoTable");
 table.innerHTML="";
 
 for(let u in users){
+let refName = findUserById(user.referrer);
 
-let user=users[u];
-
-table.innerHTML+=`
-
+table.innerHTML += `
 <tr>
 
 <td>${u}</td>
@@ -323,16 +336,15 @@ table.innerHTML+=`
 <td>${user.phone||""}</td>
 <td>${user.userId||""}</td>
 <td>$${(user.balance||0).toFixed(2)}</td>
-<td>${user.referrer||"None"}</td>
+<td>${refName ? refName : "None"}</td>
 
 </tr>
-
 `;
-
+  
 }
 
 }
-
+  
 
 function loadWithdrawals(){
 
