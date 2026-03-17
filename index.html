@@ -975,9 +975,7 @@ container.innerHTML += `
   <img src="${thumbnails[Math.floor(Math.random()*thumbnails.length)]}">
   <h4>${task.title}</h4>
   <p>Earn $${task.reward}</p>
- ${users[currentUser]?.dailyTasks?.[task.id] ? 
-'<button disabled>Completed</button>' :
-`<button onclick="completeTask(${task.id}, ${task.reward})">Start Task</button>`
+  <button onclick="completeTask(${task.id}, ${task.reward})">Start Task</button>`
   }
 </div>
 `;
