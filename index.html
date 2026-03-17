@@ -828,20 +828,6 @@ users[username] = {
   refEarnings: 0
 };
 
-  stats: {
-dailyAds: 0,
-monthlyAds: 0,
-yearlyAds: 0,
-dailySales: 0,
-monthlySales: 0,
-yearlySales: 0,
-lastReset: {
-day: "",
-month: "",
-year: ""
-}
-  }
-  
 
 if(ref){
 
@@ -918,74 +904,6 @@ updateProgress();
   }
 
 
-function checkStatsReset(){
-
-let user = users[currentUser];
-
-let now = new Date();
-
-let today = now.toDateString();
-let month = now.getMonth();
-let year = now.getFullYear();
-
-/* DAILY RESET */
-if(user.stats.lastReset.day !== today){
-user.stats.dailyAds = 0;
-user.stats.dailySales = 0;
-user.stats.lastReset.day = today;
-}
-
-/* MONTHLY RESET */
-if(user.stats.lastReset.month !== month){
-user.stats.monthlyAds = 0;
-user.stats.monthlySales = 0;
-user.stats.lastReset.month = month;
-}
-
-/* YEARLY RESET */
-if(user.stats.lastReset.year !== year){
-user.stats.yearlyAds = 0;
-user.stats.yearlySales = 0;
-user.stats.lastReset.year = year;
-}
-
-localStorage.setItem("users", JSON.stringify(users));
-syncUsersToCloud();
-
-  }
-  
-
-function renderTasks(){
-
-let container=document.getElementById("videoTasksContainer");
-container.innerHTML="";
-
-videoTasks.forEach(task=>{
-
-if(completedTasks[task.id]) return;
-
-let img=thumbnails[Math.floor(Math.random()*thumbnails.length)];
-
-let card=document.createElement("div");
-card.className="video-card";
-
-card.innerHTML=`
-
-<img src="${img}">
-
-<h4>${task.title}</h4>
-
-<p id="timer-${task.id}">Reward $${task.reward}</p>
-
-<button onclick="startTask(${task.id},${task.reward})">Start Task</button>
-
-`;
-
-container.appendChild(card);
-
-});
-
-}
 
 
 
