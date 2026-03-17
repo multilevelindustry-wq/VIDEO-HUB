@@ -846,6 +846,7 @@ users[username].referrer=u;
   localStorage.setItem("users", JSON.stringify(users));
 
 syncUsersToCloud();
+  await loadCloudBackup();
 
 alert("Account created successfully. Please login.");
 
