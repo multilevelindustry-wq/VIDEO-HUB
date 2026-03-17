@@ -793,115 +793,99 @@ document.getElementById("registerPage").classList.remove("hidden");
 }
 
 
-function register(){
+function register() {
+    let username = document.getElementById("regUsername").value;
+    let email = document.getElementById("regEmail").value;
+    let phone = document.getElementById("regPhone").value;
+    let password = document.getElementById("regPassword").value;
+    let refInput = document.getElementById("regRef").value;
 
-let username = document.getElementById("regUsername").value;
-let email = document.getElementById("regEmail").value;
-let phone = document.getElementById("regPhone").value;
-let password = document.getElementById("regPassword").value;
+    if(users[username]){
+        alert("Username already exists");
+        return;
+    }
 
-if(users[username]){
-alert("Username already exists");
-return;
-}
+    // check duplicate email
+    for(let u in users){
+        if(users[u].email === email){
+            alert("Email already registered");
+            return;
+        }
+    }
 
-     // check duplicate email
-for(let u in users){
-if(users[u].email === email){
-alert("Email already registered");
-return;
-}
-  }
+    let userId = "UID" + Math.floor(Math.random()*1000000);
 
-// ✅ generate unique userId
-let userId = "UID" + Math.floor(Math.random()*1000000);
+    users[username] = {
+        username: username,
+        email: email,
+        phone: phone,
+        password: password,
+        userId: userId,
+        balance: 0,
+        personalBalance: 0,
+        referralBalance: 0,
+        refEarnings: 0,
+        referrer: refInput || referralId || null,
+        dailyTasks: {}
+    };
 
-users[username] = {
-username: username,
-email: email,
-phone: phone,
-password: password,
-userId: userId,
-
-balance: 0,
-personalBalance: 0,
-referralBalance: 0,
-refEarnings: 0,
-
-// ✅ IMPORTANT FIX HERE
-let refInput = document.getElementById("regRef").value;
-
-users[username] = {
-...
-referrer: refInput || referralId || null,
-dailyTasks: {}
-};
-
-localStorage.setItem("users", JSON.stringify(users));
-syncUsersToCloud();
-  users = JSON.parse(localStorage.getItem("users") || "{}");
-
-alert("Registration successful");
-
-document.getElementById("registerPage").classList.add("hidden");
-document.getElementById("loginPage").style.display="block";
-  
-  }
-
-
-
-  
-
-
-  
-
-
-
-
-  async function login(){
-
-await loadCloudBackup(); // ✅ VERY IMPORTANT
+    localStorage.setItem("users", JSON.stringify(users));
+    syncUsersToCloud();
     users = JSON.parse(localStorage.getItem("users") || "{}");
 
-let username = document.getElementById("usernameLogin").value;
-let password = document.getElementById("passwordLogin").value;
+    alert("Registration successful");
 
-if(!users[username]){
-alert("User not found");
-return;
-}
+    document.getElementById("registerPage").classList.add("hidden");
+    document.getElementById("loginPage").style.display="block";
+  }
 
-if(users[username].password !== password){
-alert("Wrong password");
-return;
-}
+ 
 
-currentUser = username;
-localStorage.setItem("currentUser", username);
 
-await checkDailyReset();
+  
+async function login() {
+    await loadCloudBackup(); // load cloud first
+    users = JSON.parse(localStorage.getItem("users") || "{}"); // then read localStorage
 
-completedTasks = users[currentUser].dailyTasks || {};
+    let username = document.getElementById("usernameLogin").value;
+    let password = document.getElementById("passwordLogin").value;
 
-document.getElementById("loginPage").style.display = "none";
-document.getElementById("dashboard").classList.remove("hidden");
+    if(!users[username]){
+        alert("User not found");
+        return;
+    }
 
-document.getElementById("userNameDisplay").innerText = username;
-document.getElementById("userIdDisplay").innerText = users[username].userId;
+    if(users[username].password !== password){
+        alert("Wrong password");
+        return;
+    }
 
-let refId = users[currentUser].userId;
-let cleanURL = window.location.origin + window.location.pathname;
-document.getElementById("refLink").value = cleanURL + "?ref=" + refId;
+    currentUser = username;
+    localStorage.setItem("currentUser", username);
 
-renderTasks();
-renderProducts();
-updateBalance();
-updateProgress();
-loadReferrals();
+    await checkDailyReset();
+    completedTasks = users[currentUser].dailyTasks || {};
 
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("dashboard").classList.remove("hidden");
+
+    document.getElementById("userNameDisplay").innerText = username;
+    document.getElementById("userIdDisplay").innerText = users[username].userId;
+
+    let refId = users[currentUser].userId;
+    let cleanURL = window.location.origin + window.location.pathname;
+    document.getElementById("refLink").value = cleanURL + "?ref=" + refId;
+
+    renderTasks();
+    renderProducts();
+    updateBalance();
+    updateProgress();
+    loadReferrals();
   }
 
 
+
+  
 
 function loadReferrals(){
 
@@ -1717,27 +1701,20 @@ function backToLogin() {
 }
 
 
-  async function retrievePassword(){
+  async function retrievePassword() {
+    await loadCloudBackup();
+    users = JSON.parse(localStorage.getItem("users") || "{}");
 
-await loadCloudBackup();
+    let email = document.getElementById("forgotEmail").value.trim();
 
-users = JSON.parse(localStorage.getItem("users") || "{}");
+    for(let username in users){
+        if(users[username].email === email){
+            alert(`Your password for ${username}: ${users[username].password}`);
+            return;
+        }
+    }
 
-let email = document.getElementById("forgotEmail").value.trim();
-
-for(let username in users){
-
-if(users[username].email === email){
-
-alert(`Your password for ${username}: ${users[username].password}`);
-return;
-
-}
-
-}
-
-alert("Email not found");
-
+    alert("Email not found");
   }
 
 
