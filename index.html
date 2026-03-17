@@ -985,15 +985,47 @@ container.innerHTML += `
 
   
 
-function startTask(id,reward){
+function startTask(taskId, reward){
 
-runAdsSequence(()=>{
+    // prevent duplicate
+    if(users[currentUser].dailyTasks[taskId]){
+        alert("Task already completed");
+        return;
+    }
 
-creditReward(id,reward);
+    runAdsSequence(() => {
 
-});
+        // credit reward
+        let user = users[currentUser];
 
-}
+        // mark task as complete
+        if(!user.dailyTasks) user.dailyTasks = {};
+        user.dailyTasks[taskId] = true;
+
+        // add reward to balances
+        user.personalBalance = (user.personalBalance || 0) + reward;
+        user.balance = (user.balance || 0) + reward;
+
+        // referral bonus
+        if(user.referrer && users[user.referrer]){
+            users[user.referrer].referralBalance += reward * 0.1;
+            users[user.referrer].refEarnings = users[user.referrer].referralBalance;
+        }
+
+        // save
+        localStorage.setItem("users", JSON.stringify(users));
+        db.collection("siteData").doc("users").set({ users });
+
+        // update UI
+        updateBalance();
+        updateProgress();
+        renderTasks();
+
+        alert("Reward credited: $" + reward);
+    });
+
+  }
+  
 
 
 function runAdsSequence(callback){
@@ -1073,20 +1105,16 @@ function updateBalance(){
   document.getElementById("personalEarn").innerText = (user.personalBalance||0).toFixed(2);
 }
 
-
 function updateProgress(){
+    let count = Object.keys(users[currentUser].dailyTasks || {}).length;
+    let max = videoTasks.length; // total available tasks
 
+    document.getElementById("adsCount").innerText = count + " / " + max;
 
-  let count = Object.keys(users[currentUser].dailyTasks || {}).length;
-let max = 50;
+    let percent = (count / max) * 100;
 
-document.getElementById("adsCount").innerText = count + " / " + max;
-
-let percent = (count / max) * 100;
-
-document.getElementById("progressBar").style.width = percent + "%";
-document.getElementById("progressBar").innerText = Math.floor(percent) + "%";
-
+    document.getElementById("progressBar").style.width = percent + "%";
+    document.getElementById("progressBar").innerText = Math.floor(percent) + "%";
   }
 
 
