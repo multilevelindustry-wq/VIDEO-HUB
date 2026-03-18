@@ -686,7 +686,7 @@ let completedTasks={};
 let videoTasks=[];
 
 for(let i=1;i<=60;i++){
-videoTasks.push({id:i,title:"View Ads To Earn "+i,reward:20});
+videoTasks.push({id:i,title:"View Ads To Earn "+i,reward:0.009});
 }
 
 let thumbnails=[
@@ -943,41 +943,58 @@ alert("Task completed!");
   }
 
 
-
-
-
-  async function checkDailyReset(){
+async function checkDailyReset(){
 
 let doc = await db.collection("userActivity").doc(currentUser).get();
 
+let today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+// If no record, create one
 if(!doc.exists){
+
+await db.collection("userActivity").doc(currentUser).set({
+lastResetDate: today
+});
+
 return;
 }
 
 let data = doc.data();
 
-if(!data.lastTaskTime){
+// If no saved date
+if(!data.lastResetDate){
+
+await db.collection("userActivity").doc(currentUser).update({
+lastResetDate: today
+});
+
 return;
 }
 
-let lastTime = data.lastTaskTime.toDate();
-let now = new Date();
+// ✅ CHECK IF NEW DAY
+if(data.lastResetDate !== today){
 
-/* CHECK 24 HOURS DIFFERENCE */
-
-let diff = (now - lastTime) / (1000 * 60 * 60);
-
-if(diff >= 24){
-
+// RESET TASKS
 users[currentUser].dailyTasks = {};
 
+// SAVE
 localStorage.setItem("users", JSON.stringify(users));
 syncUsersToCloud();
+
+// UPDATE NEW DATE
+await db.collection("userActivity").doc(currentUser).update({
+lastResetDate: today
+});
+
+console.log("Tasks reset for new day");
 
 }
 
   }
 
+
+
+  
 
 function renderTasks(){
 
@@ -1002,39 +1019,54 @@ container.innerHTML += `
 
 
 
-  
- function startTask(taskId, reward) {
-    if (users[currentUser].dailyTasks[taskId]) {
+
+function startTask(taskId, reward) {
+
+    let user = users[currentUser];
+
+    // ensure object exists
+    if(!user.dailyTasks){
+        user.dailyTasks = {};
+    }
+
+    // check AFTER reset
+    if (user.dailyTasks[taskId]) {
         alert("Task already completed");
         return;
     }
 
-    // Start ads sequence
-    runAdsSequenceSameTab(reward, (earnedAmount) => {
-        let user = users[currentUser];
+    // Start ads
+    runAdsSequenceSameTab(reward, async (earnedAmount) => {
 
-        if(!user.dailyTasks) user.dailyTasks = {};
+        // mark completed
         user.dailyTasks[taskId] = true;
 
+        // credit user
         user.personalBalance = (user.personalBalance || 0) + earnedAmount;
         user.balance = (user.balance || 0) + earnedAmount;
 
-        // referral bonus
-if(user.referrer){
-payReferralCommission(currentUser, earnedAmount);
- }
-      
+        // referral
+        if(user.referrer){
+            payReferralCommission(currentUser, earnedAmount);
+        }
 
+        // ✅ UPDATE LAST TASK TIME (IMPORTANT FOR TRACKING)
+        await db.collection("userActivity").doc(currentUser).set({
+            lastTaskTime: new Date()
+        }, { merge: true });
+
+        // save
         localStorage.setItem("users", JSON.stringify(users));
-        db.collection("siteData").doc("users").set({ users });
+        await db.collection("siteData").doc("users").set({ users });
 
+        // update UI
         updateBalance();
         updateProgress();
         renderTasks();
 
-        alert(`Reward credited: $${earnedAmount.toFixed(2)} (after ads viewed)`);
+        alert(`Reward credited: $${earnedAmount.toFixed(2)}`);
     });
-}
+  }
 
 
   
@@ -1048,7 +1080,7 @@ async function runAdsSequenceSameTab(totalReward, callback) {
         "https://bendspecimen.com/brat1gza?key=9056405a95930b711c4ff1b10c376889"
     ];
 
-    let adTime = 20000; // 20 seconds per ad
+    let adTime = 25000; // 20 seconds per ad
     let adsShown = 0;
 
     for(let i = 0; i < ads.length; i++){
