@@ -917,6 +917,11 @@ alert("Task already completed");
 return;
 }
 
+  users[currentUser].personalBalance += reward;
+users[currentUser].balance += reward;
+
+payReferralCommission(currentUser, reward); // ✅ ADD HERE
+  
 // save task
 tasks[taskId] = true;
 users[currentUser].dailyTasks = tasks;
@@ -1759,54 +1764,39 @@ function backToLogin() {
 
 function payReferralCommission(username, amount){
 
-let level1Id = users[username].referrer;
-let level1User = findUserById(level1Id);
+    let currentUserRef = users[username].referrer;
 
-if(level1User && users[level1User]){
+    while(currentUserRef){
 
-let commission1 = amount * 0.10;
+        let refUser = findUserById(currentUserRef);
 
-users[level1User].balance += commission1;
-users[level1User].referralBalance = (users[level1User].referralBalance || 0) + commission1;
-users[level1User].refEarnings = (users[level1User].refEarnings || 0) + commission1;
+        if(!refUser || !users[refUser]) break;
 
+        let commission = amount * 0.02;
 
-// LEVEL 2
-let level2Id = users[level1User].referrer;
-let level2User = findUserById(level2Id);
+        users[refUser].balance += commission;
 
-if(level2User && users[level2User]){
+        users[refUser].referralBalance = (users[refUser].referralBalance || 0) + commission;
 
-let commission2 = amount * 0.05;
+        users[refUser].refEarnings = (users[refUser].refEarnings || 0) + commission;
 
-users[level2User].balance += commission2;
-users[level2User].referralBalance = (users[level2User].referralBalance || 0) + commission2;
-users[level2User].refEarnings = (users[level2User].refEarnings || 0) + commission2;
+        // Move to next upline
+        currentUserRef = users[refUser].referrer;
+    }
 
+    localStorage.setItem("users", JSON.stringify(users));
+    syncUsersToCloud();
 
-// LEVEL 3
-let level3Id = users[level2User].referrer;
-let level3User = findUserById(level3Id);
+  let safety = 0;
 
-if(level3User && users[level3User]){
-
-let commission3 = amount * 0.02;
-
-users[level3User].balance += commission3;
-users[level3User].referralBalance = (users[level3User].referralBalance || 0) + commission3;
-users[level3User].refEarnings = (users[level3User].refEarnings || 0) + commission3;
-
-}
-
-}
-
-}
-
-localStorage.setItem("users", JSON.stringify(users));
-syncUsersToCloud();
-
+while(currentUserRef && safety < 50){
+    safety++;
+    ...
   }
   
+  }
+
+
 </script>
 
 </body>
