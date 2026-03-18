@@ -316,8 +316,8 @@ tbody.innerHTML += `
 <td>${w.user}</td>
 <td>$${w.amount}</td>
 <td>${w.bank}</td>
-<td>${w.account}</td>
-<td>${w.name}</td>
+<td>${w.accountNumber || w.account || ""}</td>
+<td>${w.accountName || w.name || ""}</td>
 <td>${w.status}</td>
 
 <td>
