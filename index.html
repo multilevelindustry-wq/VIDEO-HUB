@@ -1247,6 +1247,11 @@ tbody.innerHTML += `
     syncUsersToCloud();
     syncWithdrawalsToCloud();
 
+    if(!bank || !accountNumber || !accountName){
+    alert("Please fill all bank details");
+    return;
+  }
+
     // Update dashboard
     updateBalance();
     showWithdrawStatus();
