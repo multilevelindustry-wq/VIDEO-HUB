@@ -917,10 +917,7 @@ alert("Task already completed");
 return;
 }
 
-  users[currentUser].personalBalance += reward;
-users[currentUser].balance += reward;
 
-payReferralCommission(currentUser, reward); // ✅ ADD HERE
   
 // save task
 tasks[taskId] = true;
@@ -1787,12 +1784,6 @@ function payReferralCommission(username, amount){
     localStorage.setItem("users", JSON.stringify(users));
     syncUsersToCloud();
 
-  let safety = 0;
-
-while(currentUserRef && safety < 50){
-    safety++;
-    ...
-  }
   
   }
 
