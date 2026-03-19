@@ -685,7 +685,7 @@ let completedTasks={};
   
 let videoTasks=[];
 
-for(let i=1;i<=100;i++){
+for(let i=1;i<=50;i++){
 videoTasks.push({id:i,title:"View Ads To Earn "+i,reward:0.0095});
 }
 
@@ -1248,17 +1248,17 @@ tbody.innerHTML += `
 
     if (user.personalBalance >= remaining) {
         user.personalBalance -= remaining;
-        remaining = 10;
+        remaining = 0;
     } else {
         remaining -= user.personalBalance;
-        user.personalBalance = 10;
+        user.personalBalance = 0;
     }
 
     // Then deduct from referral balance
-    if (remaining > 10) {
+    if (remaining > 0) {
         if (user.referralBalance >= remaining) {
             user.referralBalance -= remaining;
-            remaining = 10;
+            remaining = 0;
         } else {
             alert("Insufficient referral balance for this withdrawal");
             return;
