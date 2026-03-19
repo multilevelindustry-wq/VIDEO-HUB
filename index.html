@@ -841,16 +841,19 @@ function register() {
     document.getElementById("loginPage").style.display="block";
   }
 
- 
+ async function login() {
 
+    // ✅ FIRST: Load from Firebase
+    await loadCloudBackup();
 
-  
-async function login() {
-    await loadCloudBackup(); // load cloud first
-    users = JSON.parse(localStorage.getItem("users") || "{}"); // then read localStorage
+    // ✅ THEN refresh users from localStorage
+    users = JSON.parse(localStorage.getItem("users") || "{}");
 
-    let username = document.getElementById("usernameLogin").value;
+    let username = document.getElementById("usernameLogin").value.trim();
     let password = document.getElementById("passwordLogin").value;
+
+    // DEBUG (optional)
+    console.log("Users:", users);
 
     if(!users[username]){
         alert("User not found");
@@ -866,7 +869,6 @@ async function login() {
     localStorage.setItem("currentUser", username);
 
     await checkDailyReset();
-    completedTasks = users[currentUser].dailyTasks || {};
 
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("dashboard").classList.remove("hidden");
@@ -874,10 +876,7 @@ async function login() {
     document.getElementById("userNameDisplay").innerText = username;
     document.getElementById("userIdDisplay").innerText = users[username].userId;
 
-    let refId = users[currentUser].userId;
-    let cleanURL = window.location.origin + window.location.pathname;
-    document.getElementById("refLink").value = cleanURL + "?ref=" + refId;
-
+    generateReferralLink();
     renderTasks();
     renderProducts();
     updateBalance();
@@ -886,7 +885,7 @@ async function login() {
   }
 
 
-
+  
   
 
 function loadReferrals(){
@@ -1396,40 +1395,46 @@ document.addEventListener("click", resetTimer);
 document.addEventListener("keypress", resetTimer);
 document.addEventListener("scroll", resetTimer);
 
-  
 window.onload = async function(){
+
   getReferralFromURL();
 
-await loadCloudBackup();
+  // ✅ Load from Firebase FIRST
+  await loadCloudBackup();
 
-currentUser = localStorage.getItem("currentUser");
+  // ✅ THEN assign users
+  users = JSON.parse(localStorage.getItem("users") || "{}");
 
-if(currentUser && users[currentUser]){
+  currentUser = localStorage.getItem("currentUser");
 
-// Stay logged in ✅
-document.getElementById("loginPage").style.display="none";
-document.getElementById("dashboard").classList.remove("hidden");
+  if(currentUser && users[currentUser]){
 
-document.getElementById("userNameDisplay").innerText = currentUser;
-document.getElementById("userIdDisplay").innerText = users[currentUser].userId;
+    document.getElementById("loginPage").style.display="none";
+    document.getElementById("dashboard").classList.remove("hidden");
 
-generateReferralLink();
-updateBalance();
-updateProgress();
-renderProducts();
-renderTasks();
+    document.getElementById("userNameDisplay").innerText = currentUser;
+    document.getElementById("userIdDisplay").innerText = users[currentUser].userId;
 
-startInactivityTimer(); // keep your 10min logout
+    generateReferralLink();
+    updateBalance();
+    updateProgress();
+    renderProducts();
+    renderTasks();
 
-}else{
+    startInactivityTimer();
 
-// Only show login if no user
-document.getElementById("loginPage").style.display="block";
-document.getElementById("dashboard").classList.add("hidden");
+  } else {
 
-}
+    document.getElementById("loginPage").style.display="block";
+    document.getElementById("dashboard").classList.add("hidden");
 
   }
+  }
+
+
+
+  
+  
 
 
 
